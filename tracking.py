@@ -8,4 +8,5 @@ data = np.array(data)
 '''''
 
 import scipy.io as sio
-matcontents = sio.loadmat('')
+
+a=sio.loadmat('Cell0000625_v7.mat')
