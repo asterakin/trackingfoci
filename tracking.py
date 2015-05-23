@@ -2,14 +2,27 @@ __author__ = 'Stella'
 
 import scipy.io as sio
 from scipy import misc
+import numpy as np
 from random import random
 
 
-def is_empty (biglist):
+# should return false if all nan's
+# not working great yet, returns false if there is any nan
+def empty (biglist):
+	for x in biglist:
+		for y in x:
+			if np.isnan(y):
+				return False
+			else:
+				return True
+
+	'''
+	return all(np.isnan(x) for x in biglist)
+
 	try:
-		return all( is_empty(x) for x in biglist )
+		return all( empty(x) for x in biglist )
 	except TypeError:
-		return False
+		return False'''
 
 def convertMatFile(filename):
 	celldata =sio.matlab.loadmat(filename)
@@ -18,7 +31,7 @@ def convertMatFile(filename):
 	lifetime = len(celldata['xx'][0])
 	elements = len(celldata['xx'])
 
-	spots = [list([[None] for y in range(lifetime)]) for _ in range(elements)]
+	spots = [list([[numpy.nan] for y in range(lifetime)]) for _ in range(elements)]
 
 	for spot in range(elements):
 		for time in range(lifetime):
@@ -31,13 +44,15 @@ def convertMatFile(filename):
 
 def run (filename = 'Cell0000625_track.mat'):
 		global min_score
-		global allowSplits
-		global allowMerges
+		global allow_splits
+		global allow_merges
+		global max_time_window
 		# set parameters
 
 		min_score= 3
-		allowSplits= 0
-		allowMerges= 0
+		allow_splits= 0
+		allow_merges= 0
+		max_time_window = 5
 
     spots = convertMatFile(filename)
 
@@ -49,6 +64,10 @@ def run (filename = 'Cell0000625_track.mat'):
 def initial_state (tracks)
 	# do nearest neighbour from both sides to find some initial tracks
 
+
+	#pick first spot
+	newtrack = range
+	for t in range(1,lifetime)
 
 
 
@@ -105,5 +124,14 @@ def plot(state)
 	cellpicture = misc.imread('Cell0000625.png')
 	plt.imshow(cellpicture)
 
+
+	# plot two tracks
+	for track in range(len(tracks)):
+		newplot = []
+		if not empty(tracks[track]):
+			for x in range(lifetime):
+				newplot.append(tracks[track][x][0])
+			plt.plot(range(0,lifetime),newplot)
+			plt.scatter(range(0,lifetime),newplot)
 
 convertMatFile()
