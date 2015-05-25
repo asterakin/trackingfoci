@@ -11,42 +11,52 @@ ALLOW_MERGES = False
 MAX_TIME_WINDOW = 5
 
 # returns false if all nan's
-def no_nans(biglist):
-    for x in biglist:
-	for y in x:
+'''def no_nans(biglist):
+	for x in biglist:
+		for y in x:
 	    if not np.isnan(y):
-		return False
-    return True
+				return False
+  return True'''
 
 def convertMatFile(filename):
     celldata = io.matlab.loadmat(filename)
     global lifetime
     global elements
     # TODO: does celldata have the key 'xx' ? I couldn't get this function to work with any of the .mat files I tried.
+    # only use simpleTrack.mat - the other cell files are the old ones that don't work yet.
+
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
     # TODO: Please don't use the underscore as a variable name. It has a speacial python meaning - but also you just shouldn't use it. (fixed)
+    # i thought they used _ in variable names in python for some reason..
     spots = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     for spot in range(elements):
         for time in range(lifetime):
             if celldata['sc'][spot][time] > MIN_SCORE:
                 spots[spot][time] = [celldata['xx'][spot][time],celldata['yy'][spot][time],celldata['sc'][spot][time]]
+
+		# spots has the format Track1: [[x1,y1,score],[x2,y2,score],[x3,y4,score],... ]
+		# Track 2:  [[],[],[]]
     return spots
 
-def run (filename = 'Cell0000625_track.mat'):
+def run (filename = 'simpleTrack.mat'):
     spots = convertMatFile(filename)
     # create random initial state
     # just take the spots the way they are in the table initially and act like they are a tracks
     # TODO: is tracks supposed to be global? Do you mean deepcopy (copy and deepcopy must be imported)? (If not, why is this here?)
+    # i was just trying to copy the spots to a new list so that i have a new
+		# copy of the tracks that i will be modifying.
     tracks = spots.copy()
 
 def initial_state (tracks):
     # do nearest neighbour from both sides to find some initial tracks
     #pick first spot
     # TODO: Why is this here? This is assigning the name newtrack to the range function (probably not whatever you're trying to do).
-    newtrack = range
-    for t in range(1,lifetime):
-        pass
+    # Not done yet.
+
+    #newtrack = range
+    #for t in range(1,lifetime):
+    pass
 
 def sim_anneal(state):
     old_cost = cost(state)
@@ -81,11 +91,12 @@ def cost(state):
 
 def neighbor(state):
     # TODO: why are we setting the new_state to 0? Are states supposed to be ints? Set it to None if it's an object placeholder.
-    new_state=0
+    new_state=None
     return new_state
 
 def plot(state):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
+    # still trying to figure out how we plot and display in python. this is just a test.
     cellpicture = misc.imread('Cell0000625.png')
     plt.imshow(cellpicture)
     # plot two tracks
@@ -96,3 +107,6 @@ def plot(state):
                 newplot.append(tracks[track][x][0])
             plt.plot(range(0,lifetime),newplot)
             plt.scatter(range(0,lifetime),newplot)
+
+
+run()
