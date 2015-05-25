@@ -1,58 +1,49 @@
 __author__ = ['Stella', 'phil0']
 
-import scipy.io as sio
-from scipy import misc
+from scipy import misc, io
 import numpy as np
 from random import random
 import matplotlib.pyplot as plt
 
-# should return false if all nan's
-# not working great yet, returns false if there is any nan
-def empty (biglist):
+MIN_SCORE = 3
+ALLOW_SPLITS = False
+ALLOW_MERGES = False
+MAX_TIME_WINDOW = 5
+
+# returns false if all nan's
+def no_nans(biglist):
     for x in biglist:
 	for y in x:
-	    if np.isnan(y):
+	    if not np.isnan(y):
 		return False
-	    else:
-		return True
-        '''
-        return all(np.isnan(x) for x in biglist)
-        try:
-            return all( empty(x) for x in biglist )
-        except TypeError:
-            return False'''
+    return True
 
 def convertMatFile(filename):
-    celldata =sio.matlab.loadmat(filename)
+    celldata = io.matlab.loadmat(filename)
     global lifetime
     global elements
+    # TODO: does celldata have the key 'xx' ? I couldn't get this function to work with any of the .mat files I tried.
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
-    spots = [list([[numpy.nan] for y in range(lifetime)]) for _ in range(elements)]
+    # TODO: Please don't use the underscore as a variable name. It has a speacial python meaning - but also you just shouldn't use it. (fixed)
+    spots = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     for spot in range(elements):
         for time in range(lifetime):
-            if celldata['sc'][spot][time] > min_score:
+            if celldata['sc'][spot][time] > MIN_SCORE:
                 spots[spot][time] = [celldata['xx'][spot][time],celldata['yy'][spot][time],celldata['sc'][spot][time]]
     return spots
 
 def run (filename = 'Cell0000625_track.mat'):
-    global min_score
-    global allow_splits
-    global allow_merges
-    global max_time_window
-    # set parameters
-    min_score= 3
-    allow_splits= 0
-    allow_merges= 0
-    max_time_window = 5
     spots = convertMatFile(filename)
     # create random initial state
-    # just take the spots the way they are in the table initially and act like they are a track
-    tracks=spots.copy()
+    # just take the spots the way they are in the table initially and act like they are a tracks
+    # TODO: is tracks supposed to be global? Do you mean deepcopy (copy and deepcopy must be imported)? (If not, why is this here?)
+    tracks = spots.copy()
 
 def initial_state (tracks):
     # do nearest neighbour from both sides to find some initial tracks
     #pick first spot
+    # TODO: Why is this here? This is assigning the name newtrack to the range function (probably not whatever you're trying to do).
     newtrack = range
     for t in range(1,lifetime):
         pass
@@ -72,27 +63,29 @@ def sim_anneal(state):
                 state = new_state
                 old_cost = new_cost
             i += 1
-        T = T*alpha
+        T = T * alpha
     return state, cost
 
 # evaluates cost of state
+# TODO: Please don't push unless the code actually compiles (fixed).
 def cost(state):
     # go through each track
-    distance_metric = [None for y in range(elements)]
+    distance_metric = [None] * elements
     for track in range(len(state)):
-        print('track:' +str(track))
+        # TODO: don't leave your debugging code in here when you push (fixed).
         for time in range(1,lifetime):
-            print(time)
             if state[track][time][0] is not None and state[track][time-1][0] is not None:
-                    distance_metric = (state[track][time][0]**2 - state[track][time-1][0]**2)**(0.5) 
-                    + (state[track][time][1]**2 - state[track][time-1][1]**2)**(0.5)
+                distance_metric = (state[track][time][0]**2 - state[track][time-1][0]**2)**(0.5) 
+                + (state[track][time][1]**2 - state[track][time-1][1]**2)**(0.5)
     return None
 
 def neighbor(state):
+    # TODO: why are we setting the new_state to 0? Are states supposed to be ints? Set it to None if it's an object placeholder.
     new_state=0
     return new_state
 
 def plot(state):
+    # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
     cellpicture = misc.imread('Cell0000625.png')
     plt.imshow(cellpicture)
     # plot two tracks
@@ -103,5 +96,3 @@ def plot(state):
                 newplot.append(tracks[track][x][0])
             plt.plot(range(0,lifetime),newplot)
             plt.scatter(range(0,lifetime),newplot)
-
-#convertMatFile()
