@@ -5,17 +5,20 @@ import numpy as np
 from random import random
 import matplotlib.pyplot as plt
 
+
 MIN_SCORE = 3
 ALLOW_SPLITS = False
 ALLOW_MERGES = False
 MAX_TIME_WINDOW = 5
 
+
+
 # returns false if all nan's
 '''def no_nans(biglist):
-	for x in biglist:
-		for y in x:
-	    if not np.isnan(y):
-				return False
+  for x in biglist:
+    for y in x:
+      if not np.isnan(y):
+        return False
   return True'''
 
 def convertMatFile(filename):
@@ -35,8 +38,10 @@ def convertMatFile(filename):
             if celldata['sc'][spot][time] > MIN_SCORE:
                 spots[spot][time] = [celldata['xx'][spot][time],celldata['yy'][spot][time],celldata['sc'][spot][time]]
 
-		# spots has the format Track1: [[x1,y1,score],[x2,y2,score],[x3,y4,score],... ]
-		# Track 2:  [[],[],[]]
+    # spots has the format Track1: [[x1,y1,score],[x2,y2,score],[x3,y4,score],... ]
+    # Track 2:  [[],[],[]]
+    print(spots)
+    plot(spots)
     return spots
 
 def run (filename = 'simpleTrack.mat'):
@@ -45,8 +50,11 @@ def run (filename = 'simpleTrack.mat'):
     # just take the spots the way they are in the table initially and act like they are a tracks
     # TODO: is tracks supposed to be global? Do you mean deepcopy (copy and deepcopy must be imported)? (If not, why is this here?)
     # i was just trying to copy the spots to a new list so that i have a new
-		# copy of the tracks that i will be modifying.
+    # copy of the tracks that i will be modifying.
     tracks = spots.copy()
+
+		tracks = initial_state(tracks)
+		[final_state,cost] = sim_anneal(tracks)
 
 def initial_state (tracks):
     # do nearest neighbour from both sides to find some initial tracks
@@ -56,7 +64,8 @@ def initial_state (tracks):
 
     #newtrack = range
     #for t in range(1,lifetime):
-    pass
+		return tracks; # for now just keep the random initial state
+    #pass
 
 def sim_anneal(state):
     old_cost = cost(state)
@@ -87,14 +96,24 @@ def cost(state):
             if state[track][time][0] is not None and state[track][time-1][0] is not None:
                 distance_metric = (state[track][time][0]**2 - state[track][time-1][0]**2)**(0.5) 
                 + (state[track][time][1]**2 - state[track][time-1][1]**2)**(0.5)
-    return None
+
+    cost = distance_metric
+
+    return cost
 
 def neighbor(state):
     # TODO: why are we setting the new_state to 0? Are states supposed to be ints? Set it to None if it's an object placeholder.
+
+    # make random change in one spots
+
     new_state=None
     return new_state
 
-def plot(state):
+
+def acceptance_probability(old_cost,new_cost,T)
+    pass
+
+def plot(tracks):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
     # still trying to figure out how we plot and display in python. this is just a test.
     cellpicture = misc.imread('Cell0000625.png')
@@ -102,11 +121,11 @@ def plot(state):
     # plot two tracks
     for track in range(len(tracks)):
         newplot = []
-        if not empty(tracks[track]):
-            for x in range(lifetime):
-                newplot.append(tracks[track][x][0])
-            plt.plot(range(0,lifetime),newplot)
-            plt.scatter(range(0,lifetime),newplot)
+        #if not empty(tracks[track]):
+        for x in range(lifetime):
+            newplot.append(tracks[track][x][0])
+        plt.plot(range(0,lifetime),newplot)
+        plt.scatter(range(0,lifetime),newplot)
 
 
 run()
