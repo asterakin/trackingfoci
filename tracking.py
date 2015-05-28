@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 MIN_SCORE = 3
 ALLOW_SPLITS = False
 ALLOW_MERGES = False
-MAX_TIME_WINDOW = 5
+MAX_TIME_WINDOW = 3
 
 
 
@@ -41,7 +41,6 @@ def convertMatFile(filename):
     # spots has the format Track1: [[x1,y1,score],[x2,y2,score],[x3,y4,score],... ]
     # Track 2:  [[],[],[]]
     print(spots)
-    plot(spots)
     return spots
 
 def run (filename = 'simpleTrack.mat'):
@@ -58,7 +57,6 @@ def run (filename = 'simpleTrack.mat'):
 def initial_state (tracks):
     # do nearest neighbour from both sides to find some initial tracks
     #pick first spot
-    # TODO: Why is this here? This is assigning the name newtrack to the range function (probably not whatever you're trying to do).
     # Not done yet.
 
     #newtrack = range
@@ -101,13 +99,10 @@ def cost(state):
     return cost
 
 def neighbor(state):
-    # TODO: why are we setting the new_state to 0? Are states supposed to be ints? Set it to None if it's an object placeholder.
-
     # make random change in one spots
 
     new_state=None
     return new_state
-
 
 def acceptance_probability(old_cost,new_cost,T):
     return 0
@@ -115,14 +110,10 @@ def acceptance_probability(old_cost,new_cost,T):
 def plot(tracks):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
     # still trying to figure out how we plot and display in python. this is just a test.
-    cellpicture = misc.imread('Cell0000625.png')
-    plt.imshow(cellpicture)
     # plot two tracks
     for track in range(len(tracks)):
         newplot = []
         #if not empty(tracks[track]):
         for x in range(lifetime):
             newplot.append(tracks[track][x][0])
-        plt.plot(range(0,lifetime),newplot)
         plt.scatter(range(0,lifetime),newplot)
-
