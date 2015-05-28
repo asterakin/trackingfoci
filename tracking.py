@@ -52,9 +52,8 @@ def run (filename = 'simpleTrack.mat'):
     # i was just trying to copy the spots to a new list so that i have a new
     # copy of the tracks that i will be modifying.
     tracks = spots.copy()
-
-		tracks = initial_state(tracks)
-		[final_state,cost] = sim_anneal(tracks)
+    tracks = initial_state(tracks)
+    [final_state,cost] = sim_anneal(tracks)
 
 def initial_state (tracks):
     # do nearest neighbour from both sides to find some initial tracks
@@ -94,11 +93,11 @@ def cost(state):
         # TODO: don't leave your debugging code in here when you push (fixed).
         for time in range(1,lifetime):
             if state[track][time][0] is not None and state[track][time-1][0] is not None:
-                distance_metric = (state[track][time][0]**2 - state[track][time-1][0]**2)**(0.5) 
-                + (state[track][time][1]**2 - state[track][time-1][1]**2)**(0.5)
+                distance_metric=0
+                #distance_metric = (state[track][time][0]**2 - state[track][time-1][0]**2)**(0.5)
+                #+ (state[track][time][1]**2 - state[track][time-1][1]**2)**(0.5)
 
     cost = distance_metric
-
     return cost
 
 def neighbor(state):
@@ -110,8 +109,8 @@ def neighbor(state):
     return new_state
 
 
-def acceptance_probability(old_cost,new_cost,T)
-    pass
+def acceptance_probability(old_cost,new_cost,T):
+    return 0
 
 def plot(tracks):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
