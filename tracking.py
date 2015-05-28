@@ -14,12 +14,12 @@ MAX_TIME_WINDOW = 5
 
 
 # returns false if all nan's
-'''def no_nans(biglist):
-  for x in biglist:
-    for y in x:
-      if not np.isnan(y):
-        return False
-  return True'''
+def no_nans(biglist):
+    for x in biglist:
+        for y in x:
+            if not np.isnan(y):
+                return False
+    return True
 
 def convertMatFile(filename):
     celldata = io.matlab.loadmat(filename)
@@ -127,5 +127,3 @@ def plot(tracks):
         plt.plot(range(0,lifetime),newplot)
         plt.scatter(range(0,lifetime),newplot)
 
-
-run()
