@@ -78,8 +78,8 @@ def sim_anneal(state):
                 state = new_state
                 old_cost = new_cost
                 plot(new_state)
-        i += 1
-        T = T * alpha
+            i += 1
+            T = T * alpha
 
     return state, cost  # TODO: calculate a neighbor state
 
@@ -106,7 +106,7 @@ def cost(state):
         # print("Track" + str(track))
         for time in range(1, lifetime):
             if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
-                distance_metric[track] = distance_metric[track] + ((state[track][time][0] - state[track][time - 1][0]) ** 2) ** 0.5 + ((state[track][time][1] - state[track][time - 1][1]) ** 2) ** 0.5
+                distance_metric[track] = distance_metric[track] +(((state[track][time][0] - state[track][time - 1][0]) ** 2) + ((state[track][time][1] - state[track][time - 1][1]) ** 2)) ** 0.5
 
     cost = 0
     for i in distance_metric:
