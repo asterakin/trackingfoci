@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import math
 from random import random
 from operator import itemgetter
+from copy import deepcopy
 
 MIN_SCORE = 3
 ALLOW_SPLITS = False
@@ -46,13 +47,12 @@ def convertMatFile(filename):
 
 def run(filename='simpleTrack.mat'):
     spots = convertMatFile(filename)
-    tracks = spots.copy()
-    tracks = initial_state_2(tracks)
+    tracks = deepcopy(spots)
+    tracks = initial_state(tracks)
     plt.ion()
     plot(tracks)
-    [final_state, cost] = sim_anneal(tracks)
-    plot(final_state)
-    print("THE END")
+    #[final_state, cost] = sim_anneal(tracks)
+    #plot(final_state)
 
 
 
@@ -135,15 +135,15 @@ def sim_anneal(state):
     T = 1.0
     T_min = 0.00001
     alpha = 0.9
+    old_cost_plot = []
+    new_cost_plot = []
     while T > T_min:
         i = 1
         while i <= 10000:
             new_state = neighbor(state)
             new_cost = cost(state)
             ap = acceptance_probability(old_cost, new_cost, T)
-            #print(str(old_cost) + ' vs ' + str(new_cost))
             if ap > random():
-                print("Accepted")
                 state = new_state
                 old_cost = new_cost
                 #plot(new_state)
@@ -175,11 +175,9 @@ def cost(state):
 
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
-        # print("Track" + str(track))
         for time in range(0, lifetime):
             if time > 0 and np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
-                distance_metric[track] = distance_metric[track] +(((state[track][time][0] - state[track][time - 1][0]) ** 2) + ((state[track][time][1] - state[track][time - 1][1]) ** 2)) ** 0.5
-
+                distance_metric[track] += euclidean_distance(state[track][time], state[track][time - 1])
     icost = 0
     for i in distance_metric:
         icost = icost + i
@@ -194,16 +192,13 @@ def acceptance_probability(old_cost, new_cost, T):
 
 def plot(tracks):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
-
     plt.clf()
-
-    print("I am plotting")
     for track in range(len(tracks)):
         newplot = []
         # if not empty(tracks[track]):
         for x in range(lifetime):
             newplot.append(tracks[track][x][0])
-        plt.plot(range(0, lifetime), newplot, '.-')
+        #plt.plot(range(0, lifetime), newplot, '.-')
 
     plt.show()
 
@@ -217,5 +212,23 @@ def plot(tracks):
     plt.scatter(range(0,lifetime),newplot)
 		'''
 
+def phil_nn(state):
+    result = [[i[0]] for i in state if not np.isnan(i[0][0])] 
+    current_time = 0
+    while (current_time + 1 < len(state[0])):
+        potential_neighbors = [state[j][current_time + 1] for j in range(len(state)) if not np.isnan(state[j][current_time + 1][0])] 
+        for track in range(len(result)):
+            min_distance = float('inf')
+            min_point = None
+            for neighbor_point in potential_neighbors:
+                this_distance = euclidean_distance(result[track][current_time], neighbor_point) 
+                if this_distance < min_distance:
+                    min_distance = this_distance
+                    min_point = neighbor_point
+            result[track].append(min_point)
+        current_time += 1
+    return result
 
-run()
+# points are of the form [x, y, intensity]
+def euclidean_distance(point1, point2):
+    return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
