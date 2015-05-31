@@ -57,8 +57,6 @@ def run(filename='simpleTrack.mat'):
 
 
 def distance (pointA, pointB):
-    print(pointA)
-    print(pointB)
     return ((pointA[0] - pointB[0])**2 + (pointA[1] - pointB[1])**2)**0.5
 
 
@@ -67,7 +65,10 @@ def distance (pointA, pointB):
 def initial_state3 (state):
     # take random points, make random tracks towards both sides
     # then try to connect random segments with simulated annealing
-    return state;
+
+
+
+    return state
 
 
 
@@ -169,6 +170,14 @@ def neighbor(state):
     #plot(state)
 
     return state
+
+
+def find_starts(state)
+
+
+def make_random_connections (state)
+
+
 
 
 def cost(state):
