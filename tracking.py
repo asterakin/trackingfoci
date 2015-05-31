@@ -40,7 +40,6 @@ def convertMatFile(filename):
         for time in range(lifetime):
             if celldata['sc'][spot][time] > MIN_SCORE:
                 spots[spot][time] = [celldata['xx'][spot][time], celldata['yy'][spot][time], celldata['sc'][spot][time]]
-
     return spots
 
 
@@ -124,7 +123,6 @@ def acceptance_probability(old_cost, new_cost, T):
 
 def plot(tracks):
     # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
-
     fig = plt.figure()
     plt.close(fig)
     print("I am plotting")
