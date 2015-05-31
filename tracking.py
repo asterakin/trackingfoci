@@ -104,9 +104,11 @@ def cost(state):
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
         # print("Track" + str(track))
-        for time in range(1, lifetime):
-            if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
+        for time in range(0, lifetime):
+            if time > 0 and np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
                 distance_metric[track] = distance_metric[track] +(((state[track][time][0] - state[track][time - 1][0]) ** 2) + ((state[track][time][1] - state[track][time - 1][1]) ** 2)) ** 0.5
+            if time +1 < lifetime and np.isfinite(state[track][time][0]) and np.isfinite(state[track][time + 1][0]):
+                distance_metric[track] = distance_metric[track] +(((state[track][time][0] - state[track][time + 1][0]) ** 2) + ((state[track][time][1] - state[track][time + 1][1]) ** 2)) ** 0.5
 
     cost = 0
     for i in distance_metric:
