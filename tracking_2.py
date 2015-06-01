@@ -62,7 +62,6 @@ def run(filename='simpleTrack.mat'):
     plot(final_state)
     print('done')
 
-
 def find_first (track):
     for i in range(len(track)):
         if np.isfinite(track[i][0]):
