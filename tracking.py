@@ -135,33 +135,30 @@ def sim_anneal(state):
     new_cost_plot = []
     while T > T_min:
         i = 1
-        while i <= 1000:
+        while i <= 500:
+            print(i)
             new_state = neighbor(state)
             new_cost = cost(state)
             ap = acceptance_probability(old_cost, new_cost, T)
-            print(str(new_cost) +'vs'+ str(old_cost))
-            if ap > random():
-                print('accepted')
+            #print(str(new_cost) +'vs'+ str(old_cost))
+            if ap > random.random():
+                #print('accepted')
                 state = new_state
                 plot(new_state)
                 old_cost = new_cost
             i += 1
             T = T * alpha
-    return state, old_cost  # TODO: calculate a neighbor state
+    return state, old_cost
 
-# TODO : Figure out the non-nan values and use only those
+
 def neighbor(state):
     # make random change in random number of spots
     # swap random range
-    #for spots in range(how_many_spots):
     timepoint = randint(0, lifetime - 1)
-
-    goodTrks = good_tracks(tracks)
+    goodTrks = good_tracks(state)
     track1=random.choice(goodTrks)
     goodTrks.remove(track1)
     track2=random.choice(goodTrks)
-
-
     temp = state[track1][timepoint:lifetime]
     state[track1][timepoint:lifetime] = state[track2][timepoint:lifetime]
     state[track2][timepoint:lifetime] = temp
@@ -170,16 +167,15 @@ def neighbor(state):
 
 
 def neighbor_onespot(state):
-    # make random change in random number of spots
-    # swap random range
-    #for spots in range(how_many_spots):
+    # make random change for one random spots
     timepoint = randint(0, lifetime - 1)
-    track1 = 0 # should be elements-1 but there are too many nan tracks
-    track2 = 1
+    goodTrks = good_tracks(state)
+    track1=random.choice(goodTrks)
+    goodTrks.remove(track1)
+    track2=random.choice(goodTrks)
     temp = state[track1][timepoint]
     state[track1][timepoint] = state[track2][timepoint]
     state[track2][timepoint] = temp
-    #plot(state)
     return state
 
 
@@ -210,13 +206,48 @@ def make_random_connections (state):
 
 def cost(state):
     distance_metric = [0 for i in range(elements)]
+    msd = [0 for i in range(elements)]
+    distance_from_average = [0 for i in range(elements)]
+    meanx=[0 for i in range(elements)]
+    meany=[0 for i in range(elements)]
+    countspots = [0 for i in range(elements)]
     for track in range(elements):
-        for time in range(1, lifetime):
-            if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
+        for time in range(0, lifetime):
+            if np.isfinite(state[track][time][0]):
+                meanx[track] += state[track][time][0]
+                meany[track] += state[track][time][1]
+                countspots[track] +=1
+            if time>0 and np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
                 distance_metric[track] += euclidean_distance(state[track][time], state[track][time - 1])
-    icost = 0
+                msd[track] += euclidean_distance(state[track][time], state[track][0])
+
+    #get difference from mean position of each track
+    for track in range(elements):
+        meanpoint = [meanx[track],meany[track]]
+        for time in range(0, lifetime):
+            if np.isfinite(state[track][time][0]):
+                distance_from_average[track] += euclidean_distance(state[track][time],meanpoint)
+
+    big_cont =count_big_continuities(state)
+    icost = big_cont[0] + distance_from_average[0]+distance_metric[0]+msd[0]
+    icost = icost/1000
+
+    '''icost = 0
     for i in distance_metric:
         icost = icost + i
+
+    for y in distance_from_average:
+        icost = icost + y
+
+    big_cont =count_big_continuities(state)
+    for x in big_cont:
+        icost +=x
+
+    for i in msd:
+        icost = icost + i
+
+    icost = icost / 1000'''
+
     return icost
 
 def count_big_jumps(state):
@@ -240,11 +271,11 @@ def count_big_continuities(state):
             if i + 1 < len(track) and not np.isnan(track[i][0]) and not np.isnan(track[i+1][0]):
                 distance = euclidean_distance(track[i], track[i + 1])
                 if distance > MAX_JUMP:
-                    total_count += pow(count, 2)
+                    total_count += pow(count,2)
                     count = 0 
                 else:
                     count += 1
-        total_count += pow(count, 2)
+        total_count += pow(count,2)
         result.append(total_count)
     return result
 
@@ -254,26 +285,27 @@ def acceptance_probability(old_cost, new_cost, T):
     return ap
 
 def plot(tracks):
+    plt.clf()
     for track in range(len(tracks)):
         newplot = []
         # if not empty(tracks[track]):
         for x in range(lifetime):
             newplot.append(tracks[track][x][0])
-    plt.plot(range(0, lifetime), newplot, '.-')
+        plt.plot(range(0, lifetime), newplot, '.-')
 
     plt.show()
 
-    plt.plot(range(0, lifetime), newplot, marker='o', markersize=5, linewidth=3)
+    #plt.plot(range(0, lifetime), newplot, marker='o', markersize=5, linewidth=3)
         
     '''
-		#cellpicture = misc.imread('Cell0000625.png')
+	#cellpicture = misc.imread('Cell0000625.png')
     #plt.imshow(cellpicture)
-		# plot two tracks
+	# plot two tracks
     #plt.figure(1)
     #plt.clf()
     #plt.plot(range(0,lifetime),newplot)
     plt.scatter(range(0,lifetime),newplot)
-		'''
+	'''
 
 
 def search(state, data, current_time): 
