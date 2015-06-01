@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import math
 from random import random
+import random
 from operator import itemgetter
 from copy import deepcopy
 
@@ -17,13 +18,22 @@ MAX_TIME_WINDOW = 3
 MAX_JUMP = 5
 
 
-# returns false if all nan's
-def no_nans(biglist):
+# returns true if all nan's
+def has_nans(biglist):
     for x in biglist:
         for y in x:
-            if not np.isnan(y):
+            if np.isfinite(y):
                 return False
     return True
+
+# returns the indexes of tracks that are not all empty/full of nanas
+def good_tracks(state):
+    goodtracks = []
+    for track in range(elements):
+        if not has_nans(state[track]):
+            goodtracks.append(track)
+    return goodtracks
+
 
 
 # returns spots of format
@@ -48,37 +58,43 @@ def convertMatFile(filename):
 def run(filename='simpleTrack.mat'):
     spots = convertMatFile(filename)
     tracks = deepcopy(spots)
-    tracks = initial_state(tracks)
+    #tracks = initial_state(tracks)
+
+
+
     plt.ion()
     plot(tracks)
-    #[final_state, cost] = sim_anneal(tracks)
-    #plot(final_state)
+
+    print(find_starts_ends(tracks))
+    [final_state, c] = sim_anneal(tracks)
+    plot(final_state)
+    print('done')
 
 
 
 def distance (pointA, pointB):
     return ((pointA[0] - pointB[0])**2 + (pointA[1] - pointB[1])**2)**0.5
 
+def find_first (track):
+    for i in range(len(track)):
+        if np.isfinite(track[i][0]):
+            return (i)
+    return np.nan
 
+def find_last (track):
+    for i in reversed(range(len(track))):
+        if np.isfinite(track[i][0]):
+            return (i)
+    return(np.nan)
 
-
-def initial_state3 (state):
+def initial_state2 (state):
     # take random points, make random tracks towards both sides
     # then try to connect random segments with simulated annealing
-
-
-
     return state
 
-
-
-def initial_state_2(state):
-    return state
 
 # TODO: START BY FINDING THE NEAREST NEIGHBOR
 def initial_state(state):
-    #starts = np.empty([elements,4])
-    #starts[:] = np.NAN
 
     # from, to, distance
     distance_map = []
@@ -86,16 +102,11 @@ def initial_state(state):
     itracks_starts = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     itracks_ends = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
 
-    #ends = np.empty([elements,4])
-    #ends[:] = np.NAN
-
     # take starting points
     for track in range(elements):
         if np.isfinite(state[track][0][0]):
             itracks_starts[track][0] = state[track][0]
             itracks_ends[track][0] = state[track][lifetime-1]
-
-
 
     for time in range(0, lifetime-1):
         for track1 in range(elements):
@@ -117,8 +128,7 @@ def initial_state(state):
                     minDistance = distance_map[x][2]
 
             itracks_starts[mintrack1][time+1] = state[mintrack2][time+1]
-            #print(itracks_starts)
-        # remove elements for distance_map
+
             j=0
             while j < len(distance_map):
                 if distance_map[j][0] == mintrack1 or distance_map[j][1] == mintrack2:
@@ -126,9 +136,8 @@ def initial_state(state):
                 else:
                     j=j+1
 
-
     plot (itracks_starts)
-    return state;  # for now just keep the random initial state
+    return state
 
 
 def sim_anneal(state):
@@ -140,14 +149,16 @@ def sim_anneal(state):
     new_cost_plot = []
     while T > T_min:
         i = 1
-        while i <= 10000:
+        while i <= 1000:
             new_state = neighbor(state)
             new_cost = cost(state)
             ap = acceptance_probability(old_cost, new_cost, T)
+            print(str(new_cost) +'vs'+ str(old_cost))
             if ap > random():
+                print('accepted')
                 state = new_state
+                plot(new_state)
                 old_cost = new_cost
-                #plot(new_state)
             i += 1
             T = T * alpha
 
@@ -158,29 +169,74 @@ def neighbor(state):
     # make random change in random number of spots
     # swap random range
 
-    how_many_spots = randint(0, 10)
-
     #for spots in range(how_many_spots):
     timepoint = randint(0, lifetime - 1)
-    track1 = randint(0, 1)  # should be elements-1 but there are too many nan tracks
-    track2 = randint(0, 1)
-    temp = state[track1][timepoint:timepoint+how_many_spots]
-    state[track1][timepoint:timepoint+how_many_spots] = state[track2][timepoint:timepoint+how_many_spots]
-    state[track2][timepoint:timepoint+how_many_spots] = temp
+
+
+
+    goodTrks = good_tracks(tracks)
+    track1=random.choice(goodTrks)
+    goodTrks.remove(track1)
+    track2=random.choice(goodTrks)
+
+
+    temp = state[track1][timepoint:lifetime]
+    state[track1][timepoint:lifetime] = state[track2][timepoint:lifetime]
+    state[track2][timepoint:lifetime] = temp
     #plot(state)
 
     return state
 
 
-def find_starts(state)
+def neighbor_onespot(state):
+    # make random change in random number of spots
+    # swap random range
+
+    #for spots in range(how_many_spots):
+    timepoint = randint(0, lifetime - 1)
+    track1 = 0 # should be elements-1 but there are too many nan tracks
+    track2 = 1
+    temp = state[track1][timepoint]
+    state[track1][timepoint] = state[track2][timepoint]
+    state[track2][timepoint] = temp
+    #plot(state)
+
+    return state
 
 
-def make_random_connections (state)
+
+def find_starts_ends(state):
+    starts = [np.nan for i in range(elements)]
+    ends = [np.nan for i in range(elements)]
+
+    for track in range(elements):
+        starts[track]=find_first(state[track])
+        ends[track]=find_last(state[track])
+
+    return starts,ends
+
+
+def make_random_connections (state):
+    # pick random track
+    [starts,ends] = find_starts_ends(state)
+
+
+    track1 = randint(0, elements)  # should be elements-1 but there are too many nan tracks
+    track2 = randint(0, elements)
+    #if track1 != track2:
+     #   start = find_first(state[track1]
+        #if start > 0:
+            # connect to track2 - check score now.
+         #   print('hi')
+    pass
+
+
 
 
 
 
 def cost(state):
+
 
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
@@ -207,19 +263,10 @@ def plot(tracks):
         # if not empty(tracks[track]):
         for x in range(lifetime):
             newplot.append(tracks[track][x][0])
-        #plt.plot(range(0, lifetime), newplot, '.-')
+        plt.plot(range(0, lifetime), newplot, '.-')
 
     plt.show()
 
-    '''
-		#cellpicture = misc.imread('Cell0000625.png')
-    #plt.imshow(cellpicture)
-		# plot two tracks
-    #plt.figure(1)
-    #plt.clf()
-    #plt.plot(range(0,lifetime),newplot)
-    plt.scatter(range(0,lifetime),newplot)
-		'''
 
 def phil_nn(state):
     result = [[i[0]] for i in state if not np.isnan(i[0][0])] 
@@ -241,3 +288,8 @@ def phil_nn(state):
 # points are of the form [x, y, intensity]
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
+
+
+run()
+
+
