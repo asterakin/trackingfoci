@@ -13,9 +13,9 @@ from copy import deepcopy
 MIN_SCORE = 3
 ALLOW_SPLITS = False
 ALLOW_MERGES = False
-MAX_TIME_WINDOW = 3
-MAX_JUMP = 5
-
+MAX_TIME_WINDOW = 5
+MAX_JUMP = 10 
+MAX_JUMP_FUNC = lambda step: step * MAX_JUMP / 2.0
 
 # returns false if all nan's
 def no_nans(biglist):
@@ -25,7 +25,6 @@ def no_nans(biglist):
                 return False
     return True
 
-
 # returns spots of format
 # spots has the format Track1: [[x1,y1,score,hashcode],[x2,y2,score,hashcode],[x3,y4,score,hashcode],... ]
 #  Track 2:  [[],[],[]]
@@ -33,17 +32,14 @@ def convertMatFile(filename):
     celldata = io.matlab.loadmat(filename)
     global lifetime
     global elements
-
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
-
     spots = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     for spot in range(elements):
         for time in range(lifetime):
             if celldata['sc'][spot][time] > MIN_SCORE:
                 spots[spot][time] = [celldata['xx'][spot][time], celldata['yy'][spot][time], celldata['sc'][spot][time]]
     return spots
-
 
 def run(filename='simpleTrack.mat'):
     spots = convertMatFile(filename)
@@ -54,23 +50,14 @@ def run(filename='simpleTrack.mat'):
     #[final_state, cost] = sim_anneal(tracks)
     #plot(final_state)
 
-
-
+# TODO: we have two of these. distance and euclidean_distance
 def distance (pointA, pointB):
     return ((pointA[0] - pointB[0])**2 + (pointA[1] - pointB[1])**2)**0.5
-
-
-
 
 def initial_state3 (state):
     # take random points, make random tracks towards both sides
     # then try to connect random segments with simulated annealing
-
-
-
     return state
-
-
 
 def initial_state_2(state):
     return state
@@ -79,24 +66,16 @@ def initial_state_2(state):
 def initial_state(state):
     #starts = np.empty([elements,4])
     #starts[:] = np.NAN
-
-    # from, to, distance
-    distance_map = []
-
+    distance_map = [] # from, to, distance
     itracks_starts = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     itracks_ends = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
-
     #ends = np.empty([elements,4])
     #ends[:] = np.NAN
-
     # take starting points
     for track in range(elements):
         if np.isfinite(state[track][0][0]):
             itracks_starts[track][0] = state[track][0]
             itracks_ends[track][0] = state[track][lifetime-1]
-
-
-
     for time in range(0, lifetime-1):
         for track1 in range(elements):
             pointA = itracks_starts[track1][time]
@@ -105,8 +84,6 @@ def initial_state(state):
                 if np.isfinite(pointA[0]) and np.isfinite(pointB[0]):
                     d = distance(pointA,pointB)
                     distance_map.append([track1,track2,d])
-
-
         # find min - not a good check should prob use a different one.
         while distance_map !=[]:
             minDistance = float("inf");
@@ -115,7 +92,6 @@ def initial_state(state):
                     mintrack1 = distance_map[x][0]
                     mintrack2 = distance_map[x][1]
                     minDistance = distance_map[x][2]
-
             itracks_starts[mintrack1][time+1] = state[mintrack2][time+1]
             #print(itracks_starts)
         # remove elements for distance_map
@@ -125,11 +101,8 @@ def initial_state(state):
                     del distance_map[j]
                 else:
                     j=j+1
-
-
     plot (itracks_starts)
     return state;  # for now just keep the random initial state
-
 
 def sim_anneal(state):
     old_cost = cost(state)
@@ -150,16 +123,13 @@ def sim_anneal(state):
                 #plot(new_state)
             i += 1
             T = T * alpha
-
     return state, old_cost  # TODO: calculate a neighbor state
 
 # TODO : Figure out the non-nan values and use only those
 def neighbor(state):
     # make random change in random number of spots
     # swap random range
-
     how_many_spots = randint(0, 10)
-
     #for spots in range(how_many_spots):
     timepoint = randint(0, lifetime - 1)
     track1 = randint(0, 1)  # should be elements-1 but there are too many nan tracks
@@ -168,49 +138,61 @@ def neighbor(state):
     state[track1][timepoint:timepoint+how_many_spots] = state[track2][timepoint:timepoint+how_many_spots]
     state[track2][timepoint:timepoint+how_many_spots] = temp
     #plot(state)
-
     return state
 
-
-def find_starts(state)
-
-
-def make_random_connections (state)
-
-
-
-
 def cost(state):
-
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
-        for time in range(0, lifetime):
-            if time > 0 and np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
+        for time in range(1, lifetime):
+            if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
                 distance_metric[track] += euclidean_distance(state[track][time], state[track][time - 1])
     icost = 0
     for i in distance_metric:
         icost = icost + i
     return icost
 
+def count_big_jumps(state):
+    result = []
+    for track in state:
+        count = 0
+        for i in range(len(track)):
+            if i + 1 < len(track) and not np.isnan(track[i][0]) and not np.isnan(track[i+1][0]):
+                distance = euclidean_distance(track[i], track[i + 1])
+                if distance > MAX_JUMP:
+                    count += 1
+        result.append(count)
+    return result
+
+def count_big_continuities(state):
+    result = []
+    for track in state:
+        total_count = 0
+        count = 0
+        for i in range(len(track)):
+            if i + 1 < len(track) and not np.isnan(track[i][0]) and not np.isnan(track[i+1][0]):
+                distance = euclidean_distance(track[i], track[i + 1])
+                if distance > MAX_JUMP:
+                    total_count += pow(count, 2)
+                    count = 0 
+                else:
+                    count += 1
+        total_count += pow(count, 2)
+        result.append(total_count)
+    return result
 
 # TODO: figure out how to calculate acceptance probability
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp(old_cost - new_cost) / T
     return ap
 
-
 def plot(tracks):
-    # TODO: shouldn't 'Cell0000625.png' be an argument we pass in to the function? Or is this your debug code?
-    plt.clf()
     for track in range(len(tracks)):
         newplot = []
         # if not empty(tracks[track]):
         for x in range(lifetime):
             newplot.append(tracks[track][x][0])
-        #plt.plot(range(0, lifetime), newplot, '.-')
-
-    plt.show()
-
+        plt.plot(range(0, lifetime), newplot, marker='o', markersize=5, linewidth=3)
+        
     '''
 		#cellpicture = misc.imread('Cell0000625.png')
     #plt.imshow(cellpicture)
@@ -221,21 +203,47 @@ def plot(tracks):
     plt.scatter(range(0,lifetime),newplot)
 		'''
 
+def search(state, data, current_time): 
+    pass
+
 def phil_nn(state):
-    result = [[i[0]] for i in state if not np.isnan(i[0][0])] 
+    result = [[i[0]]  + (len(state[0]) - 1) * [[np.nan]] for i in state] 
     current_time = 0
     while (current_time + 1 < len(state[0])):
-        potential_neighbors = [state[j][current_time + 1] for j in range(len(state)) if not np.isnan(state[j][current_time + 1][0])] 
+        already_examined_point_a = []
         for track in range(len(result)):
-            min_distance = float('inf')
-            min_point = None
-            for neighbor_point in potential_neighbors:
-                this_distance = euclidean_distance(result[track][current_time], neighbor_point) 
-                if this_distance < min_distance:
-                    min_distance = this_distance
-                    min_point = neighbor_point
-            result[track].append(min_point)
+            point_a = result[track][current_time]
+            if not np.isnan(point_a[0]) and point_a not in already_examined_point_a:
+                already_examined_point_a.append(point_a)
+                points_to_draw_line_to = find_nn(point_a, state, current_time, current_time + 1)
+                result = attach_nn(track, current_time, current_time + 1, points_to_draw_line_to, result) 
+                # couldn't find neighbor within max_jump, look more than one step ahead
+                if not len(points_to_draw_line_to):
+                    for step in range(2, MAX_TIME_WINDOW + 1):
+                        if current_time + step < len(state):
+                            points_to_draw_line_to = find_nn(point_a, state, current_time, current_time + step)
+                            result = attach_nn(track, current_time, current_time + step, points_to_draw_line_to, result)
         current_time += 1
+    return result
+
+def find_nn(point, state, current_time, end_time):
+    points_b = []
+    potential_neighbors = [state[j][end_time] for j in range(len(state)) if not np.isnan(state[j][end_time][0])] 
+    for neighbor_point in potential_neighbors:
+        this_distance = euclidean_distance(point, neighbor_point) 
+        if this_distance < MAX_JUMP:
+            points_b.append(neighbor_point)
+    return points_b
+
+def attach_nn(track, current_time, end_time, points_b, result):
+    for point_b in points_b:
+        if not np.isnan(result[track][end_time][0]):
+            for track2 in range(len(result)):
+                if np.isnan(result[track2][current_time][0]):
+                    result[track2][current_time] = result[track][current_time]
+                    result[track2][end_time] = point_b
+        else:
+            result[track][end_time] = point_b
     return result
 
 # points are of the form [x, y, intensity]
