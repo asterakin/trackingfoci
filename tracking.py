@@ -11,7 +11,7 @@ from random import random
 import random
 from operator import itemgetter
 from copy import deepcopy
-from future import *
+#from future import *
 
 MIN_SCORE = 3
 ALLOW_SPLITS = True
@@ -73,6 +73,9 @@ def run(filename):
     plt.ion()
     plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
+    plot(final_state,splits,merges)
+    plt.show(block=True)
+
     plot(final_state,splits,merges)
     print('done')
 
