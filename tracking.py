@@ -73,9 +73,6 @@ def run(filename):
     plt.ion()
     plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-    print(final_state)
-    plot(final_state,splits,merges)
-    plot(state,splits,merges)
     plot(final_state,splits,merges)
     print('done')
 
@@ -95,8 +92,8 @@ def find_last (track):
 
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
-    T = 10.0
-    T_min = 0.1
+    T = 1.0
+    T_min = 0.01
     alpha = 0.97
     iterations = 300
     old_cost_plot = []
@@ -121,9 +118,6 @@ def sim_anneal(state,splits,merges):
             i += 1
             T = T * alpha
 
-    #print('the end')
-    #plot(state,merges,splits)
-    #print(state)
     return state,splits,merges,old_cost
 
 
@@ -158,7 +152,7 @@ def neighbor_merge(state,splits,merges):
     mergetrack=[]
     possible_merges = []
     ends = find_starts_ends(state)[1]
-    print('Each track ends : ' + str(ends))
+    #print('Each track ends : ' + str(ends))
 
     for itrack in range(elements):
         if ends[itrack] < lifetime-3:
@@ -283,9 +277,9 @@ def cost(state,splits,merges):
 
     icost = 0
     for i in distance_metric:
-        icost = icost + i**2
+        icost = icost + i
 
-    icost = icost/1000
+    icost = icost/10
 
     big_jump_count =count_big_jumps(state)
 
@@ -328,7 +322,7 @@ def cost(state,splits,merges):
 
     icost +=splitcost
     icost +=mergecost
-    icost+= big_jump_count*2
+    icost+= big_jump_count*5
 
     icost = icost/10 +nancount
     return icost
@@ -364,14 +358,6 @@ def acceptance_probability(old_cost, new_cost, T):
     return ap
 
 
-
-def initial_plot (state):
-    for track in range(len(state)):
-        newplot = []
-        # if not empty(tracks[track]):
-        for x in range(lifetime):
-            newplot.append(state[track][x][0])
-        ax.scatter(range(0, lifetime), newplot)
 
 
 
