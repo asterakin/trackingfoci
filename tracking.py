@@ -11,6 +11,7 @@ from random import random
 import random
 from operator import itemgetter
 from copy import deepcopy
+from future import *
 
 MIN_SCORE = 3
 ALLOW_SPLITS = True
@@ -21,7 +22,6 @@ ALLOW_MERGES = True
 MAX_TIME_WINDOW = 5
 MAX_JUMP = 4
 MAX_JUMP_FUNC = lambda step: step * MAX_JUMP / 2.0
-
 
 # returns true if all nan's
 def has_nans(biglist):
@@ -392,13 +392,8 @@ def plot(state,splits,merges):
             plt.draw()
     plt.show()
 
-
-
-
 # points are of the form [x, y, intensity]
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
-
-
 
 run('simpleTrack.mat')
