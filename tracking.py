@@ -14,10 +14,12 @@ from copy import deepcopy
 
 MIN_SCORE = 3
 ALLOW_SPLITS = True
-BIRTH_PENALTY = 20
-ALLOW_MERGES = False
+BIRTH_PENALTY = 10
+DEATH_PENALTY = 10
+
+ALLOW_MERGES = True
 MAX_TIME_WINDOW = 5
-MAX_JUMP = 5
+MAX_JUMP = 4
 MAX_JUMP_FUNC = lambda step: step * MAX_JUMP / 2.0
 
 
@@ -46,13 +48,15 @@ def convertMatFile(filename):
     global elements
     global maxl
 
-    splits = [np.nan for y in range(6)]
-    merges = [np.nan for y in range(6)]
+
 
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
 
     maxl = celldata['lx'][0][lifetime-1]
+
+    splits = [np.nan for y in range(elements)]
+    merges = [np.nan for y in range(elements)]
 
     state = [list([[np.nan] for y in range(lifetime)]) for i in range(elements)]
     for spot in range(elements):
@@ -64,11 +68,15 @@ def convertMatFile(filename):
 
 
 def run(filename):
-    [state,splits,merges] = convertMatFile(filename)
-    [state,splits,merges] = deepcopy([state,splits,merges])
-    plot(state)
-    [final_state, c] = sim_anneal(state,splits,merges)
-    plot(final_state)
+    [initial_state,splits,merges] = convertMatFile(filename)
+    state = deepcopy(initial_state)
+    plt.ion()
+    plot(state,splits,merges)
+    [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
+    print(final_state)
+    plot(final_state,splits,merges)
+    plot(state,splits,merges)
+    plot(final_state,splits,merges)
     print('done')
 
 
@@ -90,98 +98,88 @@ def sim_anneal(state,splits,merges):
     T = 10.0
     T_min = 0.1
     alpha = 0.97
+    iterations = 300
     old_cost_plot = []
     new_cost_plot = []
     while T > T_min:
         i = 1
-        while i <= 100:
-            new_state,new_splits,new_merges = neighbor_switch_jumps(state,splits,merges)
+        while i <= iterations:
+            if i < iterations/2 :
+                [new_state,new_splits,new_merges] = neighbor_switch_jumps(state,splits,merges)
+            else:
+               new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
-            print(str(new_cost) +'vs'+ str(old_cost))
+            print('new cost: ' +str(new_cost) +'vs old cost: '+ str(old_cost))
             if ap > random.random():
                 print('accepted')
                 state = new_state
                 splits=new_splits
                 merges=new_merges
-                plot(new_state)
+                plot(new_state,splits,merges)
                 old_cost = new_cost
             i += 1
             T = T * alpha
+
+    #print('the end')
+    #plot(state,merges,splits)
+    #print(state)
     return state,splits,merges,old_cost
 
 
 
-def neighbor(state,splits,merges):
+def neighbor_merge_split(state,splits,merges):
     # take one of this random options for operators
     operatorlist = []
-    startflag=False
-    endflag=False
-
-    if count_big_jumps(state)>0:
-         operatorlist.append(1)
 
     for start in find_starts_ends(state)[0]:
-        if start > 0:
-            startflag=True
-            if ALLOW_SPLITS :
+        if start > 0 and ALLOW_SPLITS :
                 operatorlist.append(2)
 
     for end in find_starts_ends(state)[1]:
-        if end < lifetime:
-            endflag=True
-            if ALLOW_MERGES :
+        if end < lifetime and ALLOW_MERGES :
                 operatorlist.append(3)
 
-    if startflag and endflag:
-        operatorlist.append(4)
 
     operator = random.choice(operatorlist)
 
     # exchange edges
-    if operator ==1:
-        return neighbor_switch_jumps(state,splits,merges)
-
-    elif operator ==2:
+    if operator ==2:
     # find start connect it to a middle - split
+        print('Trying a split')
         return neighbor_split(state,splits,merges)
-        print('split')
+
     elif operator ==3:
     # find end connect it to a middle - merge
+        print('Trying a merge')
         return neighbor_merge(state,splits,merges)
-        print('merge')
-    elif operator ==4:
-    # find start connect it to an end - closing gap
-        return neighbor_closegap(state,splits,merges)
-        print('close')
-    else:
-        return neighbor_onespot(state,splits,merges)
 
 
 def neighbor_merge(state,splits,merges):
-    possible_merge = []
+    mergetrack=[]
+    possible_merges = []
     ends = find_starts_ends(state)[1]
+    print('Each track ends : ' + str(ends))
 
     for itrack in range(elements):
-        if ends[itrack] < lifetime:
+        if ends[itrack] < lifetime-3:
             possible_merges.append(itrack)
 
-    mergetrack = random.choice(possible_merges)
-    ends_split = find_first(state[mergetrack])
+    if possible_merges!=[]:
+        mergetrack = random.choice(possible_merges)
+        end_time = find_last(state[mergetrack])
 
-    parent_tracks = []
+        parent_tracks = []
+        print(mergetrack)
+        for itrack in range(elements):
+            if ends[itrack] > end_time and not np.isnan(state[itrack][end_time+1][0]):
+                parent_tracks.append(itrack)
 
-    for itrack in range(elements):
-        if starts[itrack] < start_split:
-            parent_tracks.append(itrack)
-
-    parent=random.choice(parent_tracks)
-
-    splits[splittrack] = parent
+        if parent_tracks!=[]:
+            parent=random.choice(parent_tracks)
+            merges[mergetrack] = parent
 
     return state,splits,merges
-
-
 
 
 
@@ -195,18 +193,17 @@ def neighbor_split(state,splits,merges):
             possible_splits.append(itrack)
 
     splittrack = random.choice(possible_splits)
-    print(splittrack)
     start_split = find_first(state[splittrack])
 
     parent_tracks = []
 
     for itrack in range(elements):
-        if starts[itrack] < start_split:
+        if starts[itrack] < start_split and np.isfinite(state[itrack][start_split][0]):
             parent_tracks.append(itrack)
 
-    parent=random.choice(parent_tracks)
-
-    splits[splittrack] = parent
+    if parent_tracks != []:
+        parent=random.choice(parent_tracks)
+        splits[splittrack] = parent
 
     return state,splits,merges
 
@@ -220,12 +217,20 @@ def neighbor_switch_jumps(state,splits,merges):
     goodTrks = good_tracks(state)
     track1=random.choice(goodTrks)
     goodTrks.remove(track1)
-    track2 = random.choice(goodTrks)
+
 
     num_of_jumps = len(big_jumps[track1])
     if num_of_jumps >= 1:
         which_jump = randint(0,num_of_jumps-1)
-        time_jump1 = big_jumps[track1][0]
+        time_jump1 = big_jumps[track1][which_jump]
+
+        track2=random.choice(goodTrks) # if one is not found put a random one?
+        for next_track in goodTrks:
+            for k in big_jumps[next_track]:
+                if k == time_jump1:
+                    track2=next_track
+                    break
+
         print('switching ' + str(track1) + 'with' + str(track2) + 'at time' + str(time_jump1))
         temp = state[track1][time_jump1:lifetime]
         state[track1][time_jump1:lifetime] = state[track2][time_jump1:lifetime]
@@ -275,11 +280,13 @@ def cost(state,splits,merges):
 
     icost = 0
     for i in distance_metric:
-        icost = icost + i
+        icost = icost + i**2
+
+    icost = icost/1000
 
     big_jump_count =count_big_jumps(state)
 
-    #split cost
+
     splitcost=0
     for sTrack in range(elements):
         if find_first(state[sTrack]) != 0 and np.isnan(splits[sTrack]): # penanlty for starts in the middle of the timeline
@@ -287,13 +294,40 @@ def cost(state,splits,merges):
         elif np.isfinite(splits[sTrack]):
             start = find_first(state[sTrack])
             parent = splits[sTrack]
-            splitcost += euclidean_distance(state[sTrack][start], state[parent][time - 1])
+            if np.isfinite(state[sTrack][start][0]) and np.isfinite(state[parent][time - 1][0]):
+                splitcost += euclidean_distance(state[sTrack][start], state[parent][time - 1])
+            else:
+                splitcost += 100
+
+    mergecost=0
+    for sTrack in range(elements):
+        if find_last(state[sTrack]) < lifetime-1 and np.isnan(merges[sTrack]): # penanlty for starts in the middle of the timeline
+            mergecost += DEATH_PENALTY
+        elif np.isfinite(merges[sTrack]):
+            end = find_last(state[sTrack])
+            parent = merges[sTrack]
+            if end < lifetime -2 and np.isfinite(state[sTrack][end][0]) and np.isfinite(state[parent][end + 1][0]):
+                mergecost += euclidean_distance(state[sTrack][end], state[parent][end + 1])
+            else:
+                mergecost += 100
+
+    # find nan time gaps
+    nancount=0
+    for track in range(elements):
+        start = find_first(state[track])
+        end = find_last(state[track])
+        if not np.isnan(start):
+            for time in range(start,end):
+                if np.isnan(state[track][time][0]):
+                    nancount +=1
+
+
 
     icost +=splitcost
+    icost +=mergecost
+    icost+= big_jump_count*2
 
-
-    icost = icost + big_jump_count*2
-
+    icost = icost/10 +nancount
     return icost
 
 
@@ -322,7 +356,6 @@ def count_big_jumps(state):
 
 
 
-# TODO: figure out how to calculate acceptance probability
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
@@ -340,16 +373,34 @@ def initial_plot (state):
 
 
 
-def plot(state):
+def plot(state,splits,merges):
     plt.clf()
     plt.axis([0, lifetime, -(maxl/2), maxl/2])
-    for track in range(len(state)):
+    for track in range(elements):
         newplot = []
-        # if not empty(tracks[track]):
-        for x in range(lifetime):
-            newplot.append(state[track][x][0])
-        plt.plot(range(0, lifetime), newplot, '.-')
-        plt.draw()
+        gaps=[]
+        gapst=[]
+        start = find_first(state[track])
+        end = find_last(state[track])
+
+        if np.isfinite(splits[track]):
+            parent = splits[track]
+            plt.plot([start-1,start],[state[parent][start-1][0],state[track][start][0]],'--')
+
+        if np.isfinite(start) and np.isfinite(end):
+            for t in range(start,end+1):
+                newplot.append(state[track][t][0])
+                if np.isnan(state[track][t][0]):
+                    if np.isfinite(state[track][t-1][0]):
+                        gapst.append(t-1)
+                        gaps.append(state[track][t-1][0])
+                    if np.isfinite(state[track][t+1][0]):
+                        gapst.append(t+1)
+                        gaps.append(state[track][t+1][0])
+
+            plt.plot(range(start, end+1), newplot, '.-')
+            plt.plot(gapst, gaps, '--')
+            plt.draw()
     plt.show()
 
 
@@ -361,29 +412,4 @@ def euclidean_distance(point1, point2):
 
 
 
-[state,splits,merges] = convertMatFile('simpleTrack_Cell0000741.mat')
-c=cost(state,splits,merges)
-#run('simpleTrack_Cell0000741.mat')
-[st,s,m]=neighbor_split(state,splits,merges)
-newc=cost(st,s,m)
-print(str(c) +  ' vs '+ str(newc))
-
-
-
-[st,s,m]=neighbor_split(state,splits,merges)
-newc=cost(st,s,m)
-print(str(c) +  ' vs '+ str(newc))
-
-
-[st,s,m]=neighbor_split(state,splits,merges)
-newc=cost(st,s,m)
-print(str(c) +  ' vs '+ str(newc))
-
-
-
-[st,s,m]=neighbor_split(state,splits,merges)
-newc=cost(st,s,m)
-print(str(c) +  ' vs '+ str(newc))
-
-
-
+run('simpleTrack_Cell0001197.mat')
