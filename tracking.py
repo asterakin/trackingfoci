@@ -113,7 +113,7 @@ def sim_anneal(state,splits,merges):
             print('new cost: ' +str(new_cost) +'vs old cost: '+ str(old_cost))
             if ap > random.random():
                 print('accepted')
-                state = new_state
+                state = deepcopy(new_state)
                 splits=new_splits
                 merges=new_merges
                 plot(new_state,splits,merges)
@@ -134,22 +134,21 @@ def neighbor_merge_split(state,splits,merges):
 
     for start in find_starts_ends(state)[0]:
         if start > 0 and ALLOW_SPLITS :
-                operatorlist.append(2)
+                operatorlist.append(1)
 
     for end in find_starts_ends(state)[1]:
         if end < lifetime and ALLOW_MERGES :
-                operatorlist.append(3)
-
+                operatorlist.append(2)
 
     operator = random.choice(operatorlist)
 
     # exchange edges
-    if operator ==2:
+    if operator ==1:
     # find start connect it to a middle - split
         print('Trying a split')
         return neighbor_split(state,splits,merges)
 
-    elif operator ==3:
+    elif operator ==2:
     # find end connect it to a middle - merge
         print('Trying a merge')
         return neighbor_merge(state,splits,merges)
@@ -208,8 +207,12 @@ def neighbor_split(state,splits,merges):
     return state,splits,merges
 
 
+# finds lonely spots and removes them from the track
+def neighbor_remove_spots(state,splits,merges):
 
-def neighbor_close_gap(state,splits,merges):
+
+
+
     return state
 
 def neighbor_switch_jumps(state,splits,merges):
@@ -412,4 +415,4 @@ def euclidean_distance(point1, point2):
 
 
 
-run('simpleTrack_Cell0001197.mat')
+run('simpleTrack.mat')
