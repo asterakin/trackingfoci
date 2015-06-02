@@ -62,6 +62,7 @@ def run(filename='simpleTrack.mat'):
     plot(final_state)
     print('done')
 
+
 def find_first (track):
     for i in range(len(track)):
         if np.isfinite(track[i][0]):
@@ -122,7 +123,7 @@ def initial_state(state):
 
 def sim_anneal(state):
     old_cost = cost(state)
-    T = 1.0
+    T = 0.001
     T_min = 0.00001
     alpha = 0.9
     old_cost_plot = []
@@ -131,12 +132,12 @@ def sim_anneal(state):
         i = 1
         while i <= 500:
             print(i)
-            new_state = neighbor(state)
+            new_state = neighbor_onespot(state)
             new_cost = cost(state)
             ap = acceptance_probability(old_cost, new_cost, T)
-            #print(str(new_cost) +'vs'+ str(old_cost))
+            print(str(new_cost) +'vs'+ str(old_cost))
             if ap > random.random():
-                #print('accepted')
+                print('accepted')
                 state = new_state
                 plot(new_state)
                 old_cost = new_cost
@@ -144,6 +145,39 @@ def sim_anneal(state):
             T = T * alpha
     return state, old_cost
 
+
+
+def neighbor_switch_jumps(state):
+    big_jumps = find_big_jumps(state)
+    goodTrks = good_tracks(state)
+    track1=random.choice(goodTrks)
+    track2 = random.choice(goodTrks)
+
+
+    num_of_jumps = len(big_jumps[track1])
+    if num_of_jumps >= 1:
+        which_jump = randint(0,num_of_jumps-1)
+        time_jump1 = big_jumps[track1][0]
+        temp = state[track1][time_jump1:lifetime]
+        state[track1][time_jump1:lifetime] = state[track2][time_jump1:lifetime]
+        state[track2][time_jump1:lifetime] = temp
+
+
+
+    '''elif num_of_jumps>2:
+        print('num of jumps' + str(num_of_jumps))
+        print('list of big jumps' + str(big_jumps))
+        which_jump = randint(0,num_of_jumps-2)
+        print('which jump : ' + str(which_jump))
+        time_jump1 = big_jumps[track1][which_jump]
+        time_jump2= big_jumps[track1][which_jump+1]
+
+        temp = state[track1][time_jump1:time_jump2]
+        state[track1][time_jump1:time_jump2] = state[track2][time_jump1:time_jump2]
+        state[track2][time_jump1:time_jump2] = temp
+    '''
+
+    return state
 
 def neighbor(state):
     # make random change in random number of spots
@@ -162,7 +196,7 @@ def neighbor(state):
 
 def neighbor_onespot(state):
     # make random change for one random spots
-    timepoint = randint(0, lifetime - 1)
+    timepoint = randint(0, lifetime - 2)
     goodTrks = good_tracks(state)
     track1=random.choice(goodTrks)
     goodTrks.remove(track1)
@@ -170,6 +204,12 @@ def neighbor_onespot(state):
     temp = state[track1][timepoint]
     state[track1][timepoint] = state[track2][timepoint]
     state[track2][timepoint] = temp
+
+
+    temp2 = state[track1][timepoint+1]
+    state[track1][timepoint+1] = state[track2][timepoint+1]
+    state[track2][timepoint+1] = temp2
+
     return state
 
 
@@ -198,9 +238,21 @@ def make_random_connections (state):
     pass
 
 
-
-
 def cost(state):
+    distance_metric = [0 for i in range(elements)]
+    for track in range(elements):
+        for time in range(1, lifetime):
+            if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
+                distance_metric[track] += euclidean_distance(state[track][time], state[track][time - 1])
+
+    icost = 0
+    for i in distance_metric:
+        icost = icost + i
+
+
+    return icost
+
+def cost2(state):
     distance_metric = [0 for i in range(elements)]
     msd = [0 for i in range(elements)]
     distance_from_average = [0 for i in range(elements)]
@@ -354,7 +406,7 @@ def euclidean_distance(point1, point2):
 
 
 
-#run()
+run()
 state=convertMatFile('simpleTrack_Cell0000942.mat')
 plot(state)
 print('hi')
