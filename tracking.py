@@ -2,18 +2,13 @@ __author__ = ['Stella', 'phil0']
 
 from scipy import misc, io
 import numpy as np
-from random import randint
+from random import *
 import matplotlib
 import matplotlib.pyplot as plt
-#from matplotlib.pyplot import plot, draw, show
 import math
-from random import random
-import random
-from operator import itemgetter
 from copy import deepcopy
-#from future import *
 
-MIN_SCORE =3
+MIN_SCORE = 3
 ALLOW_SPLITS = True
 BIRTH_PENALTY = 10
 DEATH_PENALTY = 10
@@ -21,7 +16,6 @@ DEATH_PENALTY = 10
 ALLOW_MERGES = True
 MAX_TIME_WINDOW = 5
 MAX_JUMP = 4
-MAX_JUMP_FUNC = lambda step: step * MAX_JUMP / 2.0
 
 # returns true if all nan's
 def has_nans(biglist):
@@ -38,7 +32,6 @@ def good_tracks(state):
         if not has_nans(state[track]):
             goodtracks.append(track)
     return goodtracks
-
 
 # spots has the format Track1: [[x1,y1,score,hashcode],[x2,y2,score,hashcode],[x3,y4,score,hashcode],... ]
 #  Track 2:  [[],[],[]]
@@ -66,18 +59,16 @@ def convertMatFile(filename):
 
     return neighbor_remove_spots(state),splits,merges
 
-
 def run(filename):
     [initial_state,splits,merges] = convertMatFile(filename)
     state = deepcopy(initial_state)
     plt.ion()
-    plot(state,splits,mergites)
+    plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-t    plot(final_state,splits,merges)
-    plt.show(block=True)
-
-    plot(final_state,splits,merges)
-    plt.show(block=True)
+    try:
+        input("Press enter to continue.")
+    except SyntaxError:
+        pass
     print('done')
 
 # finds the first non-nan element in a track
@@ -98,49 +89,56 @@ def find_last (track):
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
     T = 1.0
-    T_min = 0.01
-    alpha = 0.97
+    T_min = 0.0001
+    alpha = 0.99
     iterations = 300
-    old_cost_plot = []
-    new_cost_plot = []
     while T > T_min:
         i = 1
-        while i <= iterations:
-            if i < iterations/2 :
+        if i <= iterations:
+            if i < 4*iterations/5.0 :
                 [new_state,new_splits,new_merges] = neighbor_switch_jumps(state,splits,merges)
             else:
-               new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
+                new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
-            print('new cost: ' +str(new_cost) +'vs old cost: '+ str(old_cost))
-            if ap > random.random():
+            print('new cost: ' +str(new_cost) +' vs old cost: '+ str(old_cost))
+            if ap > random() and old_cost != new_cost:
                 print('accepted')
                 state = deepcopy(new_state)
                 splits=new_splits
                 merges=new_merges
-                plot(new_state,splits,merges)
+                plot(state,splits,merges)
                 old_cost = new_cost
             i += 1
             T = T * alpha
-
     return state,splits,merges,old_cost
 
 # look more than one time step ahead for next data point to connect to
 # state: state
-# track: int
-# point: int
 # steps_ahead = 0: do not look ahead (useless)
 # steps_ahead = 1: look no further than one time step ahead
 # steps_ahead = 2: look two steps ahead, etc.
-def look_ahead(state, track, point, steps_ahead):
-    potential_points_to_link_to = [] # point coordinates are stored as [track#, index#]
+def look_ahead(state, steps_ahead):
+    track, point = None, None
+    track = randint(0, len(state) - 1)
+    point = randint(0, len(state[track]) - steps_ahead - 1)
+    while np.isnan(state[track][point][0]):
+        track = randint(0, len(state) - 1)
+        point = randint(0, len(state[track]) - steps_ahead - 1)
+    potential_points_to_link_to = [] 
     for t in range(1, steps_ahead):
         for this_track in range(len(state)):
-            this_point = state[this_track][point + t]
-            if not np.isnan(this_point):
-                if euclidean_distance(state[track][point], state[this_track][this_point]) < MAX_JUMP:
-                    potential_points_to_link_to.append([this_track, point + t])
-    return potential_points_to_link_to
+            if this_track != track:
+                this_point = state[this_track][point + t]
+                if not np.isnan(this_point[0]):
+                    if euclidean_distance(state[track][point], this_point) < MAX_JUMP:
+                        potential_points_to_link_to.append([this_track, point + t, t]) # point coordinates are stored as [track#, index#, steps_ahead#]
+    if len(potential_points_to_link_to):
+        random_end_point = choice(potential_points_to_link_to)
+        to_switch = state[track][(point + random_end_point[2]):]
+        state[track][(point + random_end_point[2]):] = state[random_end_point[0]][random_end_point[1]:]
+        state[random_end_point[0]][random_end_point[1]:] = to_switch
+    return state
 
 # either 'splits' or 'merges' at each potential bifurcation point
 def neighbor_merge_split(state,splits,merges):
@@ -155,7 +153,7 @@ def neighbor_merge_split(state,splits,merges):
         if end < lifetime and ALLOW_MERGES :
                 operatorlist.append(2)
 
-    operator = random.choice(operatorlist)
+    operator = choice(operatorlist)
 
     # exchange edges
     if operator ==1:
@@ -165,8 +163,14 @@ def neighbor_merge_split(state,splits,merges):
 
     elif operator ==2:
     # find end connect it to a middle - merge
+        #print('Looking ahead')
+        #old_state = deepcopy(state)
+        #result = (look_ahead(state, 4), splits, merges)
+        #if result == old_state:
         print('Trying a merge')
         return neighbor_merge(state,splits,merges)
+        #else:
+        #    return result
 
 # merges each split with a random neighboring track
 def neighbor_merge(state,splits,merges):
@@ -180,7 +184,7 @@ def neighbor_merge(state,splits,merges):
             possible_merges.append(itrack)
 
     if possible_merges!=[]:
-        mergetrack = random.choice(possible_merges)
+        mergetrack = choice(possible_merges)
         end_time = find_last(state[mergetrack])
 
         parent_tracks = []
@@ -190,11 +194,10 @@ def neighbor_merge(state,splits,merges):
                 parent_tracks.append(itrack)
 
         if parent_tracks!=[]:
-            parent=random.choice(parent_tracks)
+            parent=choice(parent_tracks)
             merges[mergetrack] = parent
 
     return state,splits,merges
-
 
 # splits a track into two different tracks
 def neighbor_split(state,splits,merges):
@@ -206,7 +209,7 @@ def neighbor_split(state,splits,merges):
         if starts[itrack] > 0:
             possible_splits.append(itrack)
 
-    splittrack = random.choice(possible_splits)
+    splittrack = choice(possible_splits)
     start_split = find_first(state[splittrack])
 
     parent_tracks = []
@@ -216,11 +219,10 @@ def neighbor_split(state,splits,merges):
             parent_tracks.append(itrack)
 
     if parent_tracks != []:
-        parent=random.choice(parent_tracks)
+        parent=choice(parent_tracks)
         splits[splittrack] = parent
 
     return state,splits,merges
-
 
 # finds outlying spots and removes them from the track
 def neighbor_remove_spots(state):
@@ -243,7 +245,7 @@ def neighbor_remove_spots(state):
 def neighbor_switch_jumps(state,splits,merges):
     big_jumps = find_big_jumps(state)
     goodTrks = good_tracks(state)
-    track1=random.choice(goodTrks)
+    track1=choice(goodTrks)
     goodTrks.remove(track1)
 
 
@@ -252,7 +254,7 @@ def neighbor_switch_jumps(state,splits,merges):
         which_jump = randint(0,num_of_jumps-1)
         time_jump1 = big_jumps[track1][which_jump]
 
-        track2=random.choice(goodTrks) # if one is not found put a random one?
+        track2=choice(goodTrks) # if one is not found put a random one?
         for next_track in goodTrks:
             for k in big_jumps[next_track]:
                 if k == time_jump1:
@@ -266,16 +268,14 @@ def neighbor_switch_jumps(state,splits,merges):
 
     return state,splits,merges
 
-
-
 # randomly connect a data point to a track
 def neighbor_onespot(state):
     # make random change for one random spots
     timepoint = randint(0, lifetime - 2)
     goodTrks = good_tracks(state)
-    track1=random.choice(goodTrks)
+    track1=choice(goodTrks)
     goodTrks.remove(track1)
-    track2=random.choice(goodTrks)
+    track2=choice(goodTrks)
     temp = state[track1][timepoint]
     state[track1][timepoint] = state[track2][timepoint]
     state[track2][timepoint] = temp
@@ -297,7 +297,6 @@ def find_starts_ends(state):
 
     return starts,ends
 
-
 # cost evaluation function for simulated annealing (euclidean_distance + heuristics)
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
@@ -305,7 +304,6 @@ def cost(state,splits,merges):
         for time in range(1, lifetime):
             if np.isfinite(state[track][time][0]) and np.isfinite(state[track][time - 1][0]):
                 distance_metric[track] += euclidean_distance(state[track][time], state[track][time - 1])
-
     icost = 0
     for i in distance_metric:
         icost = icost + i
@@ -313,7 +311,6 @@ def cost(state,splits,merges):
     icost = icost/10
 
     big_jump_count =count_big_jumps(state)
-
 
     splitcost=0
     for sTrack in range(elements):
@@ -349,13 +346,11 @@ def cost(state,splits,merges):
                 if np.isnan(state[track][time][0]):
                     nancount +=1
 
-
-
     icost +=splitcost
     icost +=mergecost
-    icost+= big_jump_count*5
+    icost+= big_jump_count*15
 
-    icost = icost/10 +nancount
+    icost = icost +nancount*10
     return icost
 
 # finds the big (unlikely) jumps in each track
@@ -381,7 +376,6 @@ def count_big_jumps(state):
                 if distance > MAX_JUMP:
                     count += 1
     return count
-
 
 # simulated annealing acceptance probability
 def acceptance_probability(old_cost, new_cost, T):
@@ -423,4 +417,4 @@ def plot(state,splits,merges):
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
-run('simpleTrack_Cell0000818.mat')
+run('simpleTrack_Cell0000621.mat')
