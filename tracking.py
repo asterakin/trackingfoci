@@ -3,13 +3,10 @@ __author__ = ['Stella', 'phil0']
 from scipy import misc, io
 import numpy as np
 from random import randint
-import matplotlib
 import matplotlib.pyplot as plt
-#from matplotlib.pyplot import plot, draw, show
 import math
 from random import random
 import random
-from operator import itemgetter
 from copy import deepcopy
 #from future import *
 
@@ -48,8 +45,6 @@ def convertMatFile(filename):
     global elements
     global maxl
 
-
-
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
 
@@ -71,21 +66,21 @@ def run(filename):
     [initial_state,splits,merges] = convertMatFile(filename)
     state = deepcopy(initial_state)
     plt.ion()
-    plot(state,splits,mergites)
+    plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-t    plot(final_state,splits,merges)
-    plt.show(block=True)
-
     plot(final_state,splits,merges)
+    plt.show(block=True)
     print('done')
 
 
+# finds the time at which the first spot that appears in the track
 def find_first (track):
     for i in range(len(track)):
         if np.isfinite(track[i][0]):
             return (i)
     return np.nan
 
+# finds the time at which the last spot appears in the track
 def find_last (track):
     for i in reversed(range(len(track))):
         if np.isfinite(track[i][0]):
@@ -93,12 +88,13 @@ def find_last (track):
     return(np.nan)
 
 
+# simulated anneal function
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
-    T = 1.0
+    T = 10.0
     T_min = 0.01
     alpha = 0.97
-    iterations = 300
+    iterations = 500
     old_cost_plot = []
     new_cost_plot = []
     while T > T_min:
@@ -107,7 +103,7 @@ def sim_anneal(state,splits,merges):
             if i < iterations/2 :
                 [new_state,new_splits,new_merges] = neighbor_switch_jumps(state,splits,merges)
             else:
-               new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
+                new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
             print('new cost: ' +str(new_cost) +'vs old cost: '+ str(old_cost))
@@ -116,7 +112,7 @@ def sim_anneal(state,splits,merges):
                 state = deepcopy(new_state)
                 splits=new_splits
                 merges=new_merges
-                plot(new_state,splits,merges)
+                plot(state,splits,merges)
                 old_cost = new_cost
             i += 1
             T = T * alpha
@@ -124,7 +120,7 @@ def sim_anneal(state,splits,merges):
     return state,splits,merges,old_cost
 
 
-
+# operator to randomly choose between merge and split
 def neighbor_merge_split(state,splits,merges):
     # take one of this random options for operators
     operatorlist = []
@@ -239,26 +235,7 @@ def neighbor_switch_jumps(state,splits,merges):
     return state,splits,merges
 
 
-
-
-def neighbor_onespot(state):
-    # make random change for one random spots
-    timepoint = randint(0, lifetime - 2)
-    goodTrks = good_tracks(state)
-    track1=random.choice(goodTrks)
-    goodTrks.remove(track1)
-    track2=random.choice(goodTrks)
-    temp = state[track1][timepoint]
-    state[track1][timepoint] = state[track2][timepoint]
-    state[track2][timepoint] = temp
-
-    temp2 = state[track1][timepoint+1]
-    state[track1][timepoint+1] = state[track2][timepoint+1]
-    state[track2][timepoint+1] = temp2
-
-    return state
-
-
+# finds the times at which each track starts and ends
 def find_starts_ends(state):
     starts = [np.nan for i in range(elements)]
     ends = [np.nan for i in range(elements)]
@@ -270,7 +247,7 @@ def find_starts_ends(state):
     return starts,ends
 
 
-
+# finds the cost of the current state
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
@@ -321,16 +298,14 @@ def cost(state,splits,merges):
                 if np.isnan(state[track][time][0]):
                     nancount +=1
 
-
-
     icost +=splitcost
     icost +=mergecost
-    icost+= big_jump_count*5
+    icost+= big_jump_count*10
 
-    icost = icost/10 +nancount
+    icost = icost +nancount
     return icost
 
-
+# finds times where big jumps occur
 def find_big_jumps(state):
     total_result = [[] for i in range(elements)]
     for track in range(elements):
@@ -343,7 +318,7 @@ def find_big_jumps(state):
         total_result[track]=result
     return total_result
 
-
+# counts number of distances above max jump
 def count_big_jumps(state):
     count=0
     for track in state:
@@ -355,7 +330,7 @@ def count_big_jumps(state):
     return count
 
 
-
+# finds acceptance probability
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
@@ -364,7 +339,7 @@ def acceptance_probability(old_cost, new_cost, T):
 
 
 
-
+# plots current state
 def plot(state,splits,merges):
     plt.clf()
     plt.axis([0, lifetime, -(maxl/2), maxl/2])
@@ -379,19 +354,18 @@ def plot(state,splits,merges):
             parent = splits[track]
             plt.plot([start-1,start],[state[parent][start-1][0],state[track][start][0]],'--')
 
+
         if np.isfinite(start) and np.isfinite(end):
             for t in range(start,end+1):
                 newplot.append(state[track][t][0])
-                if np.isnan(state[track][t][0]):
-                    if np.isfinite(state[track][t-1][0]):
-                        gapst.append(t-1)
-                        gaps.append(state[track][t-1][0])
-                    if np.isfinite(state[track][t+1][0]):
-                        gapst.append(t+1)
-                        gaps.append(state[track][t+1][0])
+                if np.isfinite(state[track][t][0]): # to plot dotted lines between the gaps
+                    gapst.append(t)
+                    gaps.append(state[track][t][0])
 
+
+            plt.plot(gapst, gaps, ':')
+            plt.draw()
             plt.plot(range(start, end+1), newplot, '.-')
-            plt.plot(gapst, gaps, '--')
             plt.draw()
     plt.show()
 
@@ -399,4 +373,4 @@ def plot(state,splits,merges):
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
-run('simpleTrack.mat')
+run('simpleTrack_Cell0000621.mat')
