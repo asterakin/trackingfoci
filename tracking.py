@@ -1,4 +1,18 @@
 __author__ = ['Stella', 'phil0']
+'''
+PROJECT CSE 415
+
+Our program receives real data of the positions of proteins in E.coli cells in each time
+ frame. It starts with random tracks and then modifies the tracks of the proteins in
+ each frame with proteins observed in the next frame attempting to create the track.
+ It then attempts to add splits and merges to the tracks to all the possible places
+ were that can happen (ends and starts of tracks), and it decides whether that is a
+good choice or not according to the cost. It uses simulated anneal to make that decision
+so sometimes less good choices are accepted
+
+'''
+
+
 
 from scipy import misc, io
 import numpy as np
