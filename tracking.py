@@ -2,10 +2,18 @@ __author__ = ['Stella', 'phil0']
 
 from scipy import misc, io
 import numpy as np
+<<<<<<< HEAD
 from random import *
 import matplotlib
 import matplotlib.pyplot as plt
 import math
+=======
+from random import randint
+import matplotlib.pyplot as plt
+import math
+from random import random
+import random
+>>>>>>> origin/master
 from copy import deepcopy
 
 MIN_SCORE = 3
@@ -41,8 +49,6 @@ def convertMatFile(filename):
     global elements
     global maxl
 
-
-
     lifetime = len(celldata['xx'][0])
     elements = len(celldata['xx'])
 
@@ -65,12 +71,19 @@ def run(filename):
     plt.ion()
     plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
+<<<<<<< HEAD
     try:
         input("Press enter to continue.")
     except SyntaxError:
         pass
+=======
+    plot(final_state,splits,merges)
+    plt.show(block=True)
+>>>>>>> origin/master
     print('done')
 
+
+# finds the time at which the first spot that appears in the track
 # finds the first non-nan element in a track
 def find_first (track):
     for i in range(len(track)):
@@ -78,6 +91,7 @@ def find_first (track):
             return (i)
     return np.nan
 
+# finds the time at which the last spot appears in the track
 # finds the last non-nan element in a track
 def find_last (track):
     for i in reversed(range(len(track))):
@@ -85,13 +99,23 @@ def find_last (track):
             return (i)
     return(np.nan)
 
+# simulated anneal function
 # main simulated annealing algorithm
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
+<<<<<<< HEAD
     T = 1.0
     T_min = 0.0001
     alpha = 0.99
     iterations = 300
+=======
+    T = 10.0
+    T_min = 0.01
+    alpha = 0.97
+    iterations = 500
+    old_cost_plot = []
+    new_cost_plot = []
+>>>>>>> origin/master
     while T > T_min:
         i = 1
         if i <= iterations:
@@ -112,6 +136,7 @@ def sim_anneal(state,splits,merges):
             i += 1
             T = T * alpha
     return state,splits,merges,old_cost
+
 
 # look more than one time step ahead for next data point to connect to
 # state: state
@@ -268,6 +293,7 @@ def neighbor_switch_jumps(state,splits,merges):
 
     return state,splits,merges
 
+<<<<<<< HEAD
 # randomly connect a data point to a track
 def neighbor_onespot(state):
     # make random change for one random spots
@@ -285,6 +311,9 @@ def neighbor_onespot(state):
     state[track2][timepoint+1] = temp2
 
     return state
+=======
+
+>>>>>>> origin/master
 
 # find the beginning and end of each track
 def find_starts_ends(state):
@@ -297,6 +326,12 @@ def find_starts_ends(state):
 
     return starts,ends
 
+<<<<<<< HEAD
+=======
+
+
+# finds the cost of the current state
+>>>>>>> origin/master
 # cost evaluation function for simulated annealing (euclidean_distance + heuristics)
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
@@ -348,12 +383,19 @@ def cost(state,splits,merges):
 
     icost +=splitcost
     icost +=mergecost
+<<<<<<< HEAD
     icost+= big_jump_count*15
 
     icost = icost +nancount*10
+=======
+    icost+= big_jump_count*10
+
+    icost = icost +nancount
+>>>>>>> origin/master
     return icost
 
-# finds the big (unlikely) jumps in each track
+
+# finds times at which the big (unlikely) jumps happen in each track
 def find_big_jumps(state):
     total_result = [[] for i in range(elements)]
     for track in range(elements):
@@ -365,6 +407,7 @@ def find_big_jumps(state):
                     result.append (time)
         total_result[track]=result
     return total_result
+
 
 # counts number of big (unlikely) jumps in each track
 def count_big_jumps(state):
@@ -382,7 +425,11 @@ def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
 
-# display results
+
+
+
+
+# plots current state
 def plot(state,splits,merges):
     plt.clf()
     plt.axis([0, lifetime, -(maxl/2), maxl/2])
@@ -397,19 +444,18 @@ def plot(state,splits,merges):
             parent = splits[track]
             plt.plot([start-1,start],[state[parent][start-1][0],state[track][start][0]],'--')
 
+
         if np.isfinite(start) and np.isfinite(end):
             for t in range(start,end+1):
                 newplot.append(state[track][t][0])
-                if np.isnan(state[track][t][0]):
-                    if np.isfinite(state[track][t-1][0]):
-                        gapst.append(t-1)
-                        gaps.append(state[track][t-1][0])
-                    if np.isfinite(state[track][t+1][0]):
-                        gapst.append(t+1)
-                        gaps.append(state[track][t+1][0])
+                if np.isfinite(state[track][t][0]): # to plot dotted lines between the gaps
+                    gapst.append(t)
+                    gaps.append(state[track][t][0])
 
+
+            plt.plot(gapst, gaps, ':')
+            plt.draw()
             plt.plot(range(start, end+1), newplot, '.-')
-            plt.plot(gapst, gaps, '--')
             plt.draw()
     plt.show()
 
@@ -417,4 +463,9 @@ def plot(state,splits,merges):
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
+<<<<<<< HEAD
 run('simpleTrack_Cell0000621.mat')
+=======
+
+run('simpleTrack_Cell0000818.mat')
+>>>>>>> origin/master
