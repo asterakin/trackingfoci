@@ -71,9 +71,9 @@ def run(filename):
     [initial_state,splits,merges] = convertMatFile(filename)
     state = deepcopy(initial_state)
     plt.ion()
-    plot(state,splits,merges)
+    plot(state,splits,mergites)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-    plot(final_state,splits,merges)
+t    plot(final_state,splits,merges)
     plt.show(block=True)
 
     plot(final_state,splits,merges)
