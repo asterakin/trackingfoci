@@ -2,18 +2,16 @@ __author__ = ['Stella', 'phil0']
 
 from scipy import misc, io
 import numpy as np
-<<<<<<< HEAD
+
 from random import *
 import matplotlib
 import matplotlib.pyplot as plt
 import math
-=======
 from random import randint
 import matplotlib.pyplot as plt
 import math
 from random import random
 import random
->>>>>>> origin/master
 from copy import deepcopy
 
 MIN_SCORE = 3
@@ -71,15 +69,12 @@ def run(filename):
     plt.ion()
     plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-<<<<<<< HEAD
     try:
         input("Press enter to continue.")
     except SyntaxError:
         pass
-=======
     plot(final_state,splits,merges)
     plt.show(block=True)
->>>>>>> origin/master
     print('done')
 
 
@@ -103,19 +98,13 @@ def find_last (track):
 # main simulated annealing algorithm
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
-<<<<<<< HEAD
-    T = 1.0
-    T_min = 0.0001
-    alpha = 0.99
-    iterations = 300
-=======
     T = 10.0
     T_min = 0.01
     alpha = 0.97
     iterations = 500
     old_cost_plot = []
     new_cost_plot = []
->>>>>>> origin/master
+
     while T > T_min:
         i = 1
         if i <= iterations:
@@ -126,7 +115,7 @@ def sim_anneal(state,splits,merges):
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
             print('new cost: ' +str(new_cost) +' vs old cost: '+ str(old_cost))
-            if ap > random() and old_cost != new_cost:
+            if ap > random.random() and old_cost != new_cost:
                 print('accepted')
                 state = deepcopy(new_state)
                 splits=new_splits
@@ -273,7 +262,6 @@ def neighbor_switch_jumps(state,splits,merges):
     track1=choice(goodTrks)
     goodTrks.remove(track1)
 
-
     num_of_jumps = len(big_jumps[track1])
     if num_of_jumps >= 1:
         which_jump = randint(0,num_of_jumps-1)
@@ -286,34 +274,12 @@ def neighbor_switch_jumps(state,splits,merges):
                     track2=next_track
                     break
 
-        print('switching ' + str(track1) + 'with' + str(track2) + 'at time' + str(time_jump1))
         temp = state[track1][time_jump1:lifetime]
         state[track1][time_jump1:lifetime] = state[track2][time_jump1:lifetime]
         state[track2][time_jump1:lifetime] = temp
 
     return state,splits,merges
 
-<<<<<<< HEAD
-# randomly connect a data point to a track
-def neighbor_onespot(state):
-    # make random change for one random spots
-    timepoint = randint(0, lifetime - 2)
-    goodTrks = good_tracks(state)
-    track1=choice(goodTrks)
-    goodTrks.remove(track1)
-    track2=choice(goodTrks)
-    temp = state[track1][timepoint]
-    state[track1][timepoint] = state[track2][timepoint]
-    state[track2][timepoint] = temp
-
-    temp2 = state[track1][timepoint+1]
-    state[track1][timepoint+1] = state[track2][timepoint+1]
-    state[track2][timepoint+1] = temp2
-
-    return state
-=======
-
->>>>>>> origin/master
 
 # find the beginning and end of each track
 def find_starts_ends(state):
@@ -326,12 +292,7 @@ def find_starts_ends(state):
 
     return starts,ends
 
-<<<<<<< HEAD
-=======
 
-
-# finds the cost of the current state
->>>>>>> origin/master
 # cost evaluation function for simulated annealing (euclidean_distance + heuristics)
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
@@ -383,15 +344,11 @@ def cost(state,splits,merges):
 
     icost +=splitcost
     icost +=mergecost
-<<<<<<< HEAD
+
     icost+= big_jump_count*15
 
     icost = icost +nancount*10
-=======
-    icost+= big_jump_count*10
 
-    icost = icost +nancount
->>>>>>> origin/master
     return icost
 
 
@@ -424,8 +381,6 @@ def count_big_jumps(state):
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
-
-
 
 
 
@@ -463,9 +418,5 @@ def plot(state,splits,merges):
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
-<<<<<<< HEAD
-run('simpleTrack_Cell0000621.mat')
-=======
 
-run('simpleTrack_Cell0000818.mat')
->>>>>>> origin/master
+run('simpleTrack_Cell0000621.mat')
