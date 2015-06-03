@@ -411,3 +411,39 @@ state=convertMatFile('simpleTrack_Cell0000942.mat')
 plot(state)
 print('hi')
 
+
+
+def sim_anneal(state,splits,merges):
+    old_cost = cost(state,splits,merges)
+    T = 10.0
+    T_min = 0.01
+    alpha = 0.97
+    iterations = 500
+    old_cost_plot = []
+    new_cost_plot = []
+    oplist = [1,2]
+
+    while T > T_min:
+        i = 1
+        if i <= iterations:
+            if i < 4*iterations/5.0 :
+                operator = choice(oplist)
+                if operator==1:
+                    [new_state,new_splits,new_merges] = neighbor_switch_jumps(state,splits,merges)
+                else:
+                    [new_state,new_splits,new_merges] = look_ahead(state,splits,merges)
+            else:
+                new_state,new_splits,new_merges = neighbor_merge_split(state,splits,merges)
+            new_cost = cost(new_state,new_splits,new_merges)
+            ap = acceptance_probability(old_cost, new_cost, T)
+            print('new cost: ' +str(new_cost) +' vs old cost: '+ str(old_cost))
+            if ap > random.random() and old_cost != new_cost:
+                print('accepted')
+                state = deepcopy(new_state)
+                splits=new_splits
+                merges=new_merges
+                plot(state,splits,merges)
+                old_cost = new_cost
+            i += 1
+            T = T * alpha
+    return state,splits,merges,old_cost

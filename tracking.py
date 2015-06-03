@@ -1,4 +1,18 @@
 __author__ = ['Stella', 'phil0']
+'''
+PROJECT CSE 415
+
+Our program receives real data of the positions of proteins in E.coli cells in each time
+ frame. It starts with random tracks and then modifies the tracks of the proteins in
+ each frame with proteins observed in the next frame attempting to create the track.
+ It then attempts to add splits and merges to the tracks to all the possible places
+ were that can happen (ends and starts of tracks), and it decides whether that is a
+good choice or not according to the cost. It uses simulated anneal to make that decision
+so sometimes less good choices are accepted
+
+'''
+
+
 
 from scipy import misc, io
 import numpy as np
@@ -103,7 +117,7 @@ def sim_anneal(state,splits,merges):
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
             print('new cost: ' +str(new_cost) +' vs old cost: '+ str(old_cost))
-            if ap > random() and old_cost != new_cost:
+            if ap > random.random() and old_cost != new_cost:
                 print('accepted')
                 state = deepcopy(new_state)
                 splits=new_splits
@@ -216,7 +230,6 @@ def neighbor_switch_jumps(state,splits,merges):
     track1=choice(goodTrks)
     goodTrks.remove(track1)
 
-
     num_of_jumps = len(big_jumps[track1])
     if num_of_jumps >= 1:
         which_jump = randint(0,num_of_jumps-1)
@@ -229,7 +242,6 @@ def neighbor_switch_jumps(state,splits,merges):
                     track2=next_track
                     break
 
-        print('switching ' + str(track1) + 'with' + str(track2) + 'at time' + str(time_jump1))
         temp = state[track1][time_jump1:lifetime]
         state[track1][time_jump1:lifetime] = state[track2][time_jump1:lifetime]
         state[track2][time_jump1:lifetime] = temp
@@ -317,8 +329,8 @@ def cost(state,splits,merges):
     icost +=splitcost
     icost +=mergecost
     icost+= big_jump_count*10
+    icost = icost +nancount*10
 
-    icost = icost +nancount
     return icost
 
 # finds times at which the big (unlikely) jumps happen in each track
