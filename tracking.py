@@ -2,18 +2,10 @@ __author__ = ['Stella', 'phil0']
 
 from scipy import misc, io
 import numpy as np
-<<<<<<< HEAD
 from random import *
 import matplotlib
 import matplotlib.pyplot as plt
 import math
-=======
-from random import randint
-import matplotlib.pyplot as plt
-import math
-from random import random
-import random
->>>>>>> origin/master
 from copy import deepcopy
 
 MIN_SCORE = 3
@@ -71,17 +63,11 @@ def run(filename):
     plt.ion()
     plot(state,splits,merges)
     [final_state,splits,merges,c] = sim_anneal(initial_state,splits,merges)
-<<<<<<< HEAD
     try:
         input("Press enter to continue.")
     except SyntaxError:
         pass
-=======
-    plot(final_state,splits,merges)
-    plt.show(block=True)
->>>>>>> origin/master
     print('done')
-
 
 # finds the time at which the first spot that appears in the track
 # finds the first non-nan element in a track
@@ -103,19 +89,10 @@ def find_last (track):
 # main simulated annealing algorithm
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
-<<<<<<< HEAD
     T = 1.0
     T_min = 0.0001
     alpha = 0.99
     iterations = 300
-=======
-    T = 10.0
-    T_min = 0.01
-    alpha = 0.97
-    iterations = 500
-    old_cost_plot = []
-    new_cost_plot = []
->>>>>>> origin/master
     while T > T_min:
         i = 1
         if i <= iterations:
@@ -136,34 +113,6 @@ def sim_anneal(state,splits,merges):
             i += 1
             T = T * alpha
     return state,splits,merges,old_cost
-
-
-# look more than one time step ahead for next data point to connect to
-# state: state
-# steps_ahead = 0: do not look ahead (useless)
-# steps_ahead = 1: look no further than one time step ahead
-# steps_ahead = 2: look two steps ahead, etc.
-def look_ahead(state, steps_ahead):
-    track, point = None, None
-    track = randint(0, len(state) - 1)
-    point = randint(0, len(state[track]) - steps_ahead - 1)
-    while np.isnan(state[track][point][0]):
-        track = randint(0, len(state) - 1)
-        point = randint(0, len(state[track]) - steps_ahead - 1)
-    potential_points_to_link_to = [] 
-    for t in range(1, steps_ahead):
-        for this_track in range(len(state)):
-            if this_track != track:
-                this_point = state[this_track][point + t]
-                if not np.isnan(this_point[0]):
-                    if euclidean_distance(state[track][point], this_point) < MAX_JUMP:
-                        potential_points_to_link_to.append([this_track, point + t, t]) # point coordinates are stored as [track#, index#, steps_ahead#]
-    if len(potential_points_to_link_to):
-        random_end_point = choice(potential_points_to_link_to)
-        to_switch = state[track][(point + random_end_point[2]):]
-        state[track][(point + random_end_point[2]):] = state[random_end_point[0]][random_end_point[1]:]
-        state[random_end_point[0]][random_end_point[1]:] = to_switch
-    return state
 
 # either 'splits' or 'merges' at each potential bifurcation point
 def neighbor_merge_split(state,splits,merges):
@@ -188,14 +137,8 @@ def neighbor_merge_split(state,splits,merges):
 
     elif operator ==2:
     # find end connect it to a middle - merge
-        #print('Looking ahead')
-        #old_state = deepcopy(state)
-        #result = (look_ahead(state, 4), splits, merges)
-        #if result == old_state:
         print('Trying a merge')
         return neighbor_merge(state,splits,merges)
-        #else:
-        #    return result
 
 # merges each split with a random neighboring track
 def neighbor_merge(state,splits,merges):
@@ -293,7 +236,6 @@ def neighbor_switch_jumps(state,splits,merges):
 
     return state,splits,merges
 
-<<<<<<< HEAD
 # randomly connect a data point to a track
 def neighbor_onespot(state):
     # make random change for one random spots
@@ -311,9 +253,6 @@ def neighbor_onespot(state):
     state[track2][timepoint+1] = temp2
 
     return state
-=======
-
->>>>>>> origin/master
 
 # find the beginning and end of each track
 def find_starts_ends(state):
@@ -326,12 +265,6 @@ def find_starts_ends(state):
 
     return starts,ends
 
-<<<<<<< HEAD
-=======
-
-
-# finds the cost of the current state
->>>>>>> origin/master
 # cost evaluation function for simulated annealing (euclidean_distance + heuristics)
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
@@ -383,17 +316,10 @@ def cost(state,splits,merges):
 
     icost +=splitcost
     icost +=mergecost
-<<<<<<< HEAD
-    icost+= big_jump_count*15
-
-    icost = icost +nancount*10
-=======
     icost+= big_jump_count*10
 
     icost = icost +nancount
->>>>>>> origin/master
     return icost
-
 
 # finds times at which the big (unlikely) jumps happen in each track
 def find_big_jumps(state):
@@ -407,7 +333,6 @@ def find_big_jumps(state):
                     result.append (time)
         total_result[track]=result
     return total_result
-
 
 # counts number of big (unlikely) jumps in each track
 def count_big_jumps(state):
@@ -424,10 +349,6 @@ def count_big_jumps(state):
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
-
-
-
-
 
 # plots current state
 def plot(state,splits,merges):
@@ -463,9 +384,4 @@ def plot(state,splits,merges):
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
-<<<<<<< HEAD
-run('simpleTrack_Cell0000621.mat')
-=======
-
-run('simpleTrack_Cell0000818.mat')
->>>>>>> origin/master
+run('simpleTrack.mat')
