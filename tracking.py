@@ -117,7 +117,7 @@ def sim_anneal(state,splits,merges):
             new_cost = cost(new_state,new_splits,new_merges)
             ap = acceptance_probability(old_cost, new_cost, T)
             print('new cost: ' +str(new_cost) +' vs old cost: '+ str(old_cost))
-            if ap > random.random() and old_cost != new_cost:
+            if ap > random() and old_cost != new_cost:
                 print('accepted')
                 state = deepcopy(new_state)
                 splits=new_splits
