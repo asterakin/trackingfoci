@@ -13,7 +13,7 @@ from operator import itemgetter
 from copy import deepcopy
 #from future import *
 
-MIN_SCORE = 3
+MIN_SCORE =3
 ALLOW_SPLITS = True
 BIRTH_PENALTY = 10
 DEATH_PENALTY = 10
@@ -64,7 +64,7 @@ def convertMatFile(filename):
             if celldata['sc'][spot][time] > MIN_SCORE:
                 state[spot][time] = [celldata['xx'][spot][time], celldata['yy'][spot][time], celldata['sc'][spot][time]]
 
-    return state,splits,merges
+    return neighbor_remove_spots(state),splits,merges
 
 
 def run(filename):
@@ -77,22 +77,24 @@ t    plot(final_state,splits,merges)
     plt.show(block=True)
 
     plot(final_state,splits,merges)
+    plt.show(block=True)
     print('done')
 
-
+# finds the first non-nan element in a track
 def find_first (track):
     for i in range(len(track)):
         if np.isfinite(track[i][0]):
             return (i)
     return np.nan
 
+# finds the last non-nan element in a track
 def find_last (track):
     for i in reversed(range(len(track))):
         if np.isfinite(track[i][0]):
             return (i)
     return(np.nan)
 
-
+# main simulated annealing algorithm
 def sim_anneal(state,splits,merges):
     old_cost = cost(state,splits,merges)
     T = 1.0
@@ -123,8 +125,24 @@ def sim_anneal(state,splits,merges):
 
     return state,splits,merges,old_cost
 
+# look more than one time step ahead for next data point to connect to
+# state: state
+# track: int
+# point: int
+# steps_ahead = 0: do not look ahead (useless)
+# steps_ahead = 1: look no further than one time step ahead
+# steps_ahead = 2: look two steps ahead, etc.
+def look_ahead(state, track, point, steps_ahead):
+    potential_points_to_link_to = [] # point coordinates are stored as [track#, index#]
+    for t in range(1, steps_ahead):
+        for this_track in range(len(state)):
+            this_point = state[this_track][point + t]
+            if not np.isnan(this_point):
+                if euclidean_distance(state[track][point], state[this_track][this_point]) < MAX_JUMP:
+                    potential_points_to_link_to.append([this_track, point + t])
+    return potential_points_to_link_to
 
-
+# either 'splits' or 'merges' at each potential bifurcation point
 def neighbor_merge_split(state,splits,merges):
     # take one of this random options for operators
     operatorlist = []
@@ -150,7 +168,7 @@ def neighbor_merge_split(state,splits,merges):
         print('Trying a merge')
         return neighbor_merge(state,splits,merges)
 
-
+# merges each split with a random neighboring track
 def neighbor_merge(state,splits,merges):
     mergetrack=[]
     possible_merges = []
@@ -178,7 +196,7 @@ def neighbor_merge(state,splits,merges):
     return state,splits,merges
 
 
-
+# splits a track into two different tracks
 def neighbor_split(state,splits,merges):
     possible_splits = []
 
@@ -204,14 +222,24 @@ def neighbor_split(state,splits,merges):
     return state,splits,merges
 
 
-# finds lonely spots and removes them from the track
-def neighbor_remove_spots(state,splits,merges):
-
-
-
-
+# finds outlying spots and removes them from the track
+def neighbor_remove_spots(state):
+    for track in range(len(state)):
+        potential_outlier = 0
+        nan_length = 0
+        for t in range(len(state[track])):
+            if np.isnan(state[track][t][0]):
+                nan_length += 1
+            else:
+                if nan_length > 1 and not potential_outlier:
+                    potential_outlier = t
+                nan_length = 0
+            if (nan_length > 1 or t + 2 > len(state[track])) and potential_outlier:
+                state[track][potential_outlier] = [np.nan]
+                potential_outlier = 0
     return state
 
+# find large (unlikely) jumps and switch them with smaller (more likely) jumps
 def neighbor_switch_jumps(state,splits,merges):
     big_jumps = find_big_jumps(state)
     goodTrks = good_tracks(state)
@@ -240,7 +268,7 @@ def neighbor_switch_jumps(state,splits,merges):
 
 
 
-
+# randomly connect a data point to a track
 def neighbor_onespot(state):
     # make random change for one random spots
     timepoint = randint(0, lifetime - 2)
@@ -258,7 +286,7 @@ def neighbor_onespot(state):
 
     return state
 
-
+# find the beginning and end of each track
 def find_starts_ends(state):
     starts = [np.nan for i in range(elements)]
     ends = [np.nan for i in range(elements)]
@@ -270,7 +298,7 @@ def find_starts_ends(state):
     return starts,ends
 
 
-
+# cost evaluation function for simulated annealing (euclidean_distance + heuristics)
 def cost(state,splits,merges):
     distance_metric = [0 for i in range(elements)]
     for track in range(elements):
@@ -330,7 +358,7 @@ def cost(state,splits,merges):
     icost = icost/10 +nancount
     return icost
 
-
+# finds the big (unlikely) jumps in each track
 def find_big_jumps(state):
     total_result = [[] for i in range(elements)]
     for track in range(elements):
@@ -343,7 +371,7 @@ def find_big_jumps(state):
         total_result[track]=result
     return total_result
 
-
+# counts number of big (unlikely) jumps in each track
 def count_big_jumps(state):
     count=0
     for track in state:
@@ -355,16 +383,12 @@ def count_big_jumps(state):
     return count
 
 
-
+# simulated annealing acceptance probability
 def acceptance_probability(old_cost, new_cost, T):
     ap = math.exp((old_cost - new_cost) / T)
     return ap
 
-
-
-
-
-
+# display results
 def plot(state,splits,merges):
     plt.clf()
     plt.axis([0, lifetime, -(maxl/2), maxl/2])
@@ -395,8 +419,8 @@ def plot(state,splits,merges):
             plt.draw()
     plt.show()
 
-# points are of the form [x, y, intensity]
+# points are of the form [x, y, (intensity)]
 def euclidean_distance(point1, point2):
     return pow(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2), 0.5)
 
-run('simpleTrack.mat')
+run('simpleTrack_Cell0000818.mat')
