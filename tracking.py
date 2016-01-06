@@ -12,8 +12,6 @@ so sometimes less good choices are accepted
 
 '''
 
-
-
 from scipy import misc, io
 import numpy as np
 from random import *
